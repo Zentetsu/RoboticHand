@@ -37,7 +37,7 @@ def addPlugins(node) -> None:
         "MultiThreading",
     ])
 
-def initScene(node, path) -> None:
+def initScene(node, path, ground=False) -> None:
     print("Init scene...")
 
     node.addObject("FreeMotionAnimationLoop")
@@ -56,14 +56,15 @@ def initScene(node, path) -> None:
     # Inverse solver
     node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=1e-6, epsilon=0.001, printLog=False)
 
-    addGround(node, path)
+    if ground:
+        addGround(node, path)
 
 def addGround(node, path) -> None:
     print("Add ground...")
 
     ground = node.addChild("Ground")
 
-    ground.addObject("MeshOBJLoader", name="loader", filename=path + "Ground.obj", rotation=[270, 0, 0], scale=1, translation=[0, 300, 150])
+    ground.addObject("MeshOBJLoader", name="loader", filename=path + "Ground.obj", rotation=[270, 0, 0], scale=1, translation=[0, 0, 0])
     ground.addObject("MeshTopology", src="@loader")
     ground.addObject("MechanicalObject", src="@loader")
     ground.addObject("TriangleCollisionModel")
