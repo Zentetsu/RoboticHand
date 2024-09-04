@@ -17,14 +17,15 @@ def createScene(root) -> None:
     # sphere.createVisualization(collision=True)
     # # sphere.createArticulationCenter()
 
-    # sim = root.addChild("Simulation")
+    sim = root.addChild("Simulation")
 
-    arm = Arm(root, path + "Arm/", "Arm")
+    arm = Arm(sim, path + "Arm/", "Arm")
     arm.createStructure(solver="SparseLDLSolver", constraint=True)
     arm.createArticulation()
     arm.createRigid()
     arm.createVisualization()
     arm.createArticulationCenter()
+    arm.inverseControl([150, 150, 150, 0, 0, 0, 1])
 
     # hand = Hand(sim, path)
     # hand.inverseControl(thumb=[-120, 200, 20, 0, 0, 0, 1], index=[-60, 200, 400, 0, 0, 0, 1])

@@ -42,6 +42,7 @@ class BasicStructure():
         self.rigid = None
         self.visu = None
         self.collision = None
+        self.indice = 0
 
         self.ext = ".obj"
 
@@ -62,7 +63,7 @@ class BasicStructure():
         if constraint:
             self.structure.addObject("GenericConstraintCorrection")
 
-    def createArticulation(self) -> None:
+    def createArticulation(self, joint_actuator=False) -> None:
         print("Create " + self.name + " articulation...")
 
         if self.structure is None:
@@ -101,7 +102,6 @@ class BasicStructure():
             self.visu = self.rigid.addChild("Visu")
 
         for i, info in enumerate(self.visu_info):
-            print(i, info)
             BasicStructure.addPart(self.visu, info[0], i, self.path + info[1] + self.ext, self.positions[i], info[2], info[3], rigid=True, collision=collision)
 
     def createArticulationCenter(self) -> None:
@@ -114,6 +114,18 @@ class BasicStructure():
         self.centers = self.articulation.addChild("ArticulationCenters")
 
         BasicStructure.addCenter(self.centers, self.name, 0, 1, [0, 0, 0], [0, 0, 0], 0, 0, 1, [0, 1, 0], 0)
+
+    def inverseControl(self, target_position) -> None:
+        print("Defining " + self.name + " goal...")
+
+        self.target = self.node.addChild("EffectorTarget")
+
+        self.target.addObject("EulerImplicitSolver", firstOrder=True)
+        self.target.addObject("CGLinearSolver", iterations=100, threshold=1e-2, tolerance=1e-5)
+        self.target.addObject("MechanicalObject", name="dofs", template="Rigid3", position=target_position, showObject=1, showObjectScale=100, drawMode=1)
+        self.target.addObject("UncoupledConstraintCorrection")
+
+        self.rigid.addObject("PositionEffector", name="pe1", template="Rigid3", indices=self.indice, effectorGoal=target_position, useDirections=[1, 1, 1, 0, 0, 0])
 
     @staticmethod
     def addPart(node, name, index, filename, position, translation=[0, 0, 0], rotation=[0, 0, 0], color=[1, 0, 0, 1], rigid=False, collision=False) -> None:

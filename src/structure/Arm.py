@@ -31,9 +31,22 @@ class Arm(BasicStructure):
             ("Joint_4", "XM430-W350-R", [0,    0,  0], [-90, 0,  0]),
         ]
 
+        self.joint_actuator = [
+            (0, math.radians(-90), math.radians(90)),
+            (1, math.radians(-90), math.radians(90)),
+            (2, math.radians(-90), math.radians(90)),
+        ]
+
         super().__init__(node, path, name, translation, positions, init_angles, visu_info)
 
         self.ext = ".stl"
+
+    def createArticulation(self, joint_actuator=False) -> None:
+        super().createArticulation(joint_actuator)
+        print("Update " + self.name + " articulation...")
+
+        for joint in self.joint_actuator:
+            self.articulation.addObject("JointActuator", name="joint_" + str(joint[0]), index=joint[0], maxAngleVariation=0.001, minAngle=joint[1], maxAngle=joint[2])
 
     def createArticulationCenter(self) -> None:
         print("Create " + self.name + " articulation center...")
@@ -44,3 +57,5 @@ class Arm(BasicStructure):
         BasicStructure.addCenter(self.centers, "Joint_1", 1, 2, [0, 0,  0], [0, -24, -128], 0, 0, 1, [1, 0, 0], 1)
         BasicStructure.addCenter(self.centers, "Joint_2", 2, 3, [0, 0,  0], [0, -128,   0], 0, 0, 1, [1, 0, 0], 2)
         BasicStructure.addCenter(self.centers, "Joint_3", 3, 4, [0, 0,  0], [0, -124,   0], 0, 0, 1, [1, 0, 0], 3)
+
+        self.indice = 4
