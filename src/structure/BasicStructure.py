@@ -102,7 +102,7 @@ class BasicStructure():
             self.visu = self.rigid.addChild("Visu")
 
         for i, info in enumerate(self.visu_info):
-            BasicStructure.addPart(self.visu, info[0], i, self.path + info[1] + self.ext, self.positions[i], info[2], info[3], rigid=True, collision=collision)
+            BasicStructure.addPart(self.visu, info[1], info[0], self.path + info[2] + self.ext, self.positions[i], info[3], info[4], rigid=True, collision=collision)
 
     def createArticulationCenter(self) -> None:
         print("Create " + self.name + " articulation center...")
@@ -122,7 +122,7 @@ class BasicStructure():
 
         self.target.addObject("EulerImplicitSolver", firstOrder=True)
         self.target.addObject("CGLinearSolver", iterations=100, threshold=1e-2, tolerance=1e-5)
-        self.target.addObject("MechanicalObject", name="dofs", template="Rigid3", position=target_position, showObject=1, showObjectScale=100, drawMode=1)
+        self.target.addObject("MechanicalObject", name="dofs", template="Rigid3", position=target_position, showObject=1, showObjectScale=10, drawMode=1)
         self.target.addObject("UncoupledConstraintCorrection")
 
         self.rigid.addObject("PositionEffector", name="pe1", template="Rigid3", indices=self.indice, effectorGoal=target_position, useDirections=[1, 1, 1, 0, 0, 0])
