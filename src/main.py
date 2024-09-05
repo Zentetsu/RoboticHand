@@ -1,4 +1,4 @@
-from structure import Arm, Hand, Finger, Object, BasicStructure
+from structure import Arm, Hand, BasicStructure
 from tools import *
 
 import os
