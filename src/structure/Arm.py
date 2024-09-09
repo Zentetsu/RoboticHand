@@ -1,12 +1,14 @@
 import SofaRuntime
 import Sofa
 
-from structure import BasicStructure
+from splib3.numerics.quat import Quat
+
+from structure import BasicStructure, Hand
 import math
 
 
 class Arm(BasicStructure):
-    def __init__(self, node, path, name="Arm", translation=[0, 0, 0], positions=None, init_angles=None, visu_info=None):
+    def __init__(self, node, path, name="Arm", translation=[0, 0, 0], rotation=[0, 0, 0], positions=None, init_angles=None, visu_info=None):
         positions = [
             [0, 0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 0, 0, 1],
@@ -52,7 +54,7 @@ class Arm(BasicStructure):
             (8, math.radians(-90), math.radians(90)), # Joint 4
         ]
 
-        super().__init__(node, path, name, translation, positions, init_angles, visu_info)
+        super().__init__(node, path, name, translation, rotation, positions, init_angles, visu_info)
 
         self.ext = ".stl"
 

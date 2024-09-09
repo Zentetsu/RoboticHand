@@ -1,20 +1,22 @@
 import SofaRuntime
 import Sofa
 
-from structure import Finger, edit
+from structure import Finger
+import numpy as np
 import math
 
 from abc import abstractmethod
 
 
 class BasicStructure():
-    def __init__(self, node, path, name="BasicStructure", translation=[0, 0, 0], positions=None, init_angles=None, visu_info=None):
+    def __init__(self, node, path, name="BasicStructure", translation=[0, 0, 0], rotation=[0, 0, 0], positions=None, init_angles=None, visu_info=None):
         print("Init " + name + "...")
 
         self.node = node
         self.name = name
         self.path = path
         self.translation = translation
+        self.rotation = rotation
 
         if positions is None:
             self.positions = [
@@ -90,7 +92,7 @@ class BasicStructure():
         else:
             self.rigid = self.articulation.addChild("Rigid")
 
-            self.rigid.addObject("MechanicalObject", name="dofs", template="Rigid3", showObject=True, showObjectScale=10, position=self.positions[0:len(self.positions)], translation=self.translation)
+            self.mo = self.rigid.addObject("MechanicalObject", name="dofs", template="Rigid3", showObject=True, showObjectScale=10, position=self.positions[0:len(self.positions)], translation=self.translation, rotation=self.rotation)
             self.rigid.addObject("ArticulatedSystemMapping", input1=self.articulation.dofs.getLinkPath(), output=self.rigid.dofs.getLinkPath())
 
     def createVisualization(self, collision=False) -> None:
@@ -118,14 +120,14 @@ class BasicStructure():
     def inverseControl(self, target_position) -> None:
         print("Defining " + self.name + " goal...")
 
-        self.target = self.node.addChild("EffectorTarget")
+        self.target = self.node.addChild(self.name + "_EffectorTarget")
 
         self.target.addObject("EulerImplicitSolver", firstOrder=True)
         self.target.addObject("CGLinearSolver", iterations=100, threshold=1e-2, tolerance=1e-5)
         self.target.addObject("MechanicalObject", name="dofs", template="Rigid3", position=target_position, showObject=1, showObjectScale=10, drawMode=1)
         self.target.addObject("UncoupledConstraintCorrection")
 
-        self.rigid.addObject("PositionEffector", name="pe1", template="Rigid3", indices=self.indice, effectorGoal=target_position, useDirections=[1, 1, 1, 0, 0, 0])
+        self.rigid.addObject("PositionEffector", name="pe1", template="Rigid3", indices=self.indice, effectorGoal=self.target.dofs.findData('position').getLinkPath(), useDirections=[1, 1, 1, 0, 0, 0])
 
     @staticmethod
     def addPart(node, name, index, filename, position, translation=[0, 0, 0], rotation=[0, 0, 0], color=[1, 0, 0, 1], rigid=False, collision=False) -> None:
@@ -138,7 +140,7 @@ class BasicStructure():
 
         if rigid:
             part.addObject("MechanicalObject", template="Rigid3", position=position)
-            part.addObject("RigidMapping", index=index, globalToLocalCoords=True)
+            part.addObject("RigidMapping", index=index, globalToLocalCoords=False)
 
         if collision and not rigid:
             print("WARNING: need to create rigid to add collision.")

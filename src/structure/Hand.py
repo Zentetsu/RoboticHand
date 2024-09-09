@@ -1,12 +1,15 @@
 import SofaRuntime
 import Sofa
 
+from scipy.spatial.transform import Rotation as R
 from structure import BasicStructure
+import numpy as np
 import math
+import copy
 
 
 class Hand(BasicStructure):
-    def __init__(self, node, path, name="Hand", translation=[0, 0, 0], positions=None, init_angles=None, visu_info=None):
+    def __init__(self, node, path, name="Hand", translation=[0, 0, 0], rotation=[0, 0, 0], positions=None, init_angles=None, visu_info=None):
         positions = [
                 [0, 0, 0, 0, 0, 0, 1],
                 [0, 0, 0, 0, 0, 0, 1],
@@ -85,7 +88,7 @@ class Hand(BasicStructure):
             (13, math.radians(-90), math.radians(90)),
         ]
 
-        super().__init__(node, path, name, translation, positions, init_angles, visu_info)
+        super().__init__(node, path, name, translation, rotation, positions, init_angles, visu_info)
 
         self.ext = ".stl"
 
@@ -119,3 +122,22 @@ class Hand(BasicStructure):
         BasicStructure.addCenter(self.centers, "Indexp5_c", 13, 14, [ 0.004486,  0.911137,  22.2986], [0, 0, 0], 0, 0, 0, [    0,      0,     0], 13)
 
         self.indice = 9
+
+    def attachToRobot(self) -> None:
+        self.node.addObject('RigidMapping', input="@./Arm/Articulation/Rigid/dofs", output="@./Hand/Articulation/Rigid/dofs", index=9)
+
+        rotation_quat = R.from_euler('xyz', [0, math.radians(90), math.radians(90)]).as_quat()
+        new_pos = copy.copy(self.mo.position.value)
+
+        for i in range(0, len(self.mo.position.value)-1):
+            quaternion = np.array(new_pos[i][3:])
+            rotated_quat = R.from_quat(rotation_quat) * R.from_quat(quaternion)
+            new_quaternion = rotated_quat.as_quat()
+
+            rotation_matrix = R.from_quat(rotation_quat).as_matrix()
+            new_position = rotation_matrix @ np.array(new_pos[i][:3])
+
+            result = np.concatenate((new_position, new_quaternion))
+            new_pos[i] = result
+
+        self.mo.findData("position").setData = new_pos
