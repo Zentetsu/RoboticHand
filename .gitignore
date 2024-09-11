@@ -195,4 +195,6 @@ Temporary Items
 *.icloud
 
 # Additional
-model/
+model_full/
+*.blend
+*.mtl
