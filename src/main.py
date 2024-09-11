@@ -10,10 +10,16 @@ def createScene(root) -> None:
     addPlugins(root)
     initScene(root, path + "Others/", ground=True)
 
-    # cube = BasicStructure(root, path + "Others/", "Cube", positions=[[-200, 200, 50, 0, 0, 0, 1]], visu_info=[(0, "Cube", "Cube", [0, 0, 0], [0, 0, 0], True)])
-    # cube.createStructure(solver="CGLinearSolver")
-    # cube.createRigid(collision=True)
-    # cube.createVisualization()
+    cube = BasicStructure(
+        root,
+        path + "Others/",
+        "Cube",
+        positions=[[-100, 300, 50, 0, 0, 0, 1]],
+        visu_info=[(0, "Cube", "Cube", [0, 0, 0], [0, 0, 0], False)]
+    )
+    cube.createStructure(solver="CGLinearSolver")
+    cube.createRigid(collision=False)
+    cube.createVisualization()
 
     sim = root.addChild("Simulation")
 
@@ -24,7 +30,7 @@ def createScene(root) -> None:
     arm.createVisualization()
     arm.createArticulationCenter()
     arm.inverseControl([
-        [0, 225, 250, 0, 0, 0, 1],
+        [0, 75, 170, 0, 0, 0, 1],
     ])
 
     hand = Hand(sim, path + "Hand/files/", "Hand")
@@ -35,8 +41,8 @@ def createScene(root) -> None:
     hand.createArticulationCenter()
     hand.attachToRobot()
     hand.inverseControl([
-        [-100, 350, 350, 0, 0, 0, 1],
-        [-100, 400, 300, 0, 0, 0, 1],
+        None, #[-100, 350, 350, 0, 0, 0, 1],
+        [-50, 300, 50, 0, 0, 0, 1],
     ])
 
 if __name__ == "__main__":
