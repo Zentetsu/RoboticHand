@@ -2,6 +2,8 @@ import SofaRuntime
 import Sofa.Gui
 import Sofa
 
+from scipy.spatial.transform import Rotation as R
+import numpy as np
 import math
 
 USE_GUI = True
@@ -50,8 +52,9 @@ def initScene(node, path, ground=False) -> None:
     node.addObject("CollisionPipeline")
     node.addObject("ParallelBruteForceBroadPhase")
     node.addObject("ParallelBVHNarrowPhase")
-    node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=1")
-    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=2, contactDistance=1)
+    node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=0.6")
+    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=0.6, contactDistance=0.3)
+    # node.addObject('NewProximityIntersection', alarmDistance=0.6, contactDistance=0.3)
 
     # Inverse solver
     node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=1e-6, epsilon=0.001, printLog=False)
@@ -84,3 +87,6 @@ def launchGUI(root) -> None:
         Sofa.Gui.GUIManager.SetDimension(1080, 1080)
         Sofa.Gui.GUIManager.MainLoop(root)
         Sofa.Gui.GUIManager.closeGUI()
+
+def degToQuat(euler_angles):
+    return R.from_euler('xyz', euler_angles, degrees=True).as_quat()

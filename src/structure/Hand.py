@@ -63,7 +63,7 @@ class Hand(ComplexStructure):
             (10,  "Index_p1",   "index_p1", [0, 0,  0], [0, 0, 0], False),
             (11,  "Index_p2",   "index_p2", [0, 0,  0], [0, 0, 0], False),
             (12,  "Index_p3",   "index_p3", [0, 0,  0], [0, 0, 0], False),
-            (13,  "Index_p4",   "index_p4", [0, 0,  0], [0, 0, 0], False),
+            (13,  "Index_p4",   "index_p4", [0, 0,  0], [0, 0, 0], True),
         ]
 
         self.joint_actuator = [
@@ -75,17 +75,17 @@ class Hand(ComplexStructure):
             # Thumb
             (3, math.radians(-90), math.radians(90)),
             # (4, math.radians(-90), math.radians(100)), # Thumb 1
-            (5, math.radians(-90), math.radians(90)), # Thumb 2
-            (6, math.radians(-90), math.radians(90)), # Thumb 3
-            (7, math.radians(-90), math.radians(90)), # Thumb 4
+            (5, math.radians(-10), math.radians(90)), # Thumb 2
+            (6, math.radians(-0), math.radians(90)), # Thumb 3
+            (7, math.radians(-0), math.radians(90)), # Thumb 4
             # (8, math.radians(-90), math.radians(90)), # Thumb 5
 
             # Index
             (9,  math.radians(-10), math.radians(10)),
-            (10, math.radians(-90), math.radians(90)),
-            (11, math.radians(-90), math.radians(90)),
-            (12, math.radians(-90), math.radians(90)),
-            (13, math.radians(-90), math.radians(90)),
+            (10, math.radians(-90), math.radians(10)),
+            (11, math.radians(-90), math.radians(0)),
+            (12, math.radians(-90), math.radians(0)),
+            (13, math.radians(-90), math.radians(0)),
         ]
 
         super().__init__(node, path, name, translation, rotation, positions, init_angles, visu_info)

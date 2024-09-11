@@ -35,7 +35,7 @@ class ComplexStructure(BasicStructure):
         for joint in self.joint_actuator:
             self.articulation.addObject("JointActuator", name="joint_" + str(joint[0]), index=joint[0], maxAngleVariation=0.001, minAngle=joint[1], maxAngle=joint[2])
 
-        self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e10, points=[i for i in range(0, len(self.init_angles))])
+        # self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e10, points=[i for i in range(0, len(self.init_angles))])
 
     def createRigid(self) -> None:
         print("Create " + self.name + " rigid...")
@@ -69,7 +69,7 @@ class ComplexStructure(BasicStructure):
             self.target.addObject("MechanicalObject", name="dofs", template="Rigid3", position=target, showObject=1, showObjectScale=10, drawMode=1)
             self.target.addObject("UncoupledConstraintCorrection")
 
-            self.rigid.addObject("PositionEffector", name="pe_" + str(i), template="Rigid3", indices=self.indice[i], effectorGoal=target, useDirections=[1, 1, 1, 0, 0, 0])
+            self.rigid.addObject("PositionEffector", name="pe_" + str(i), template="Rigid3", indices=self.indice[i], effectorGoal=self.target.dofs.findData('position').getLinkPath(), useDirections=[1, 1, 1, 1, 1, 1])
 
     @staticmethod
     def addCenter(node, name, parentIndex, childIndex, posOnParent, posOnChild, articulationProcess, isTranslation, isRotation, axis, articulationIndex):

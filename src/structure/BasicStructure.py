@@ -54,7 +54,7 @@ class BasicStructure():
         self.structure = self.node.addChild(self.name)
 
         if solver == "SparseLDLSolver":
-            self.structure.addObject("EulerImplicitSolver")
+            self.structure.addObject("EulerImplicitSolver", rayleighMass=0.01)
             self.structure.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d")
         elif solver == "CGLinearSolver":
             self.structure.addObject("EulerImplicitSolver")
@@ -72,8 +72,6 @@ class BasicStructure():
 
         if collision:
             self.rigid.addObject("UniformMass", totalMass=0.1)
-
-        self.rigid.addObject("UncoupledConstraintCorrection")
 
     def createVisualization(self, collision=False) -> None:
         print("Create " + self.name + " visualization...")
@@ -95,50 +93,38 @@ class BasicStructure():
 
         if complx:
             part = node.addChild(name)
-            BasicStructure.addMesh(part, name, filename)
-
-            if rigid:
-                part.addObject("MechanicalObject", template="Rigid3", position=position)
-                part.addObject("RigidMapping", index=index, globalToLocalCoords=False)
-
-                if collision:
-                    BasicStructure.addCollision(part, name)
         else:
             part = node
 
-            if collision:
-                BasicStructure.addCollision(part, name, filename, complx)
+        BasicStructure.addMesh(part, name, filename)
 
-        BasicStructure.addVisu(part, name, filename, index, translation, rotation, color, rigid, complx)
+        if complx and rigid:
+            part.addObject("MechanicalObject", template="Rigid3", position=position)
+            part.addObject("RigidMapping", index=index, globalToLocalCoords=False)
+
+        if collision:
+            BasicStructure.addCollision(part, name)
+
+        BasicStructure.addVisu(part, name, index, translation, rotation, color, rigid)
 
     @staticmethod
-    def addVisu(node, name, filename, index, translation, rotation, color, rigid, complx) -> None:
+    def addVisu(node, name, index, translation, rotation, color, rigid) -> None:
         print("Add visu " + name + "...")
 
         visu = node.addChild("Visu_"+str(index))
 
-        if not complx:
-            BasicStructure.addMesh(visu, name, filename)
-
-        src_ = "@" if not complx else "@../"
-
-        visu.addObject("OglModel", name="VisualModel", src=src_ + name, color=color, translation=translation, rotation=rotation, scale=1)
+        visu.addObject("OglModel", name="VisualModel", src="@../" + name, color=color, translation=translation, rotation=rotation, scale=1)
 
         if rigid:
             visu.addObject("RigidMapping")
 
     @staticmethod
-    def addCollision(node, name, filename, complx) -> None:
+    def addCollision(node, name) -> None:
         print("Add collision " + name + "...")
 
         collision = node.addChild("Collision")
 
-        if not complx:
-            BasicStructure.addMesh(collision, name, filename)
-
-        src_ = "@" if not complx else "@../"
-
-        collision.addObject("MeshTopology", src=src_ + name)
+        collision.addObject("MeshTopology", src="@../" + name)
         collision.addObject("MechanicalObject")
         collision.addObject("TriangleCollisionModel")
         collision.addObject("LineCollisionModel")
