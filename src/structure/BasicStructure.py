@@ -61,7 +61,7 @@ class BasicStructure():
             self.structure.addObject("CGLinearSolver", threshold=1e-5, tolerance=1e-5, iterations=50)
 
         if constraint:
-            self.structure.addObject("GenericConstraintCorrection")
+            self.structure.addObject("GenericConstraintCorrection")#, linearSolver="@../Solver")
 
     def createRigid(self, collision=False) -> None:
         print("Create " + self.name + " rigid...")

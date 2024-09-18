@@ -90,3 +90,76 @@ def launchGUI(root) -> None:
 
 def degToQuat(euler_angles):
     return R.from_euler('xyz', euler_angles, degrees=True).as_quat()
+
+def getForearmFromHand(palm_coords, local_translation_y):
+    x, y, z = palm_coords[0:3]
+    qx, qy, qz, qw = degToQuat([palm_coords[3], palm_coords[4], palm_coords[5]])
+
+    T_y = local_translation_y
+    t_local = np.array([0, T_y, 0])
+
+    rotation = R.from_quat([qx, qy, qz, qw])
+    R_forearm = rotation.as_matrix()
+
+    t_global = R_forearm.dot(t_local)
+    p_forearm = np.array([x, y, z])
+    p_wrist = p_forearm + t_global
+
+    return p_wrist[0], p_wrist[1], p_wrist[2], qx, qy, qz, qw
+
+def eulerRotationMatrix(roll, pitch, yaw):
+    roll = np.deg2rad(roll)
+    pitch = np.deg2rad(pitch)
+    yaw = np.deg2rad(yaw)
+
+    Rx = np.array([
+        [1, 0, 0],
+        [0, np.cos(roll), -np.sin(roll)],
+        [0, np.sin(roll), np.cos(roll)]
+    ])
+
+    Ry = np.array([
+        [np.cos(pitch), 0, np.sin(pitch)],
+        [0, 1, 0],
+        [-np.sin(pitch), 0, np.cos(pitch)]
+    ])
+
+    Rz = np.array([
+        [np.cos(yaw), -np.sin(yaw), 0],
+        [np.sin(yaw), np.cos(yaw), 0],
+        [0, 0, 1]
+    ])
+
+    return Rz @ Ry @ Rx
+
+def matrixOriginToWrist(wrist_pos, wrist_ori):
+    R = eulerRotationMatrix(*wrist_ori)
+
+    T = np.eye(4)
+    T[:3, :3] = R
+    T[:3, 3] = wrist_pos
+
+    return T
+
+def invertMatrix(T):
+    R = T[:3, :3]
+    t = T[:3, 3]
+
+    R_inv = R.T
+    t_inv = -R_inv @ t
+
+    T_inv = np.eye(4)
+    T_inv[:3, :3] = R_inv
+    T_inv[:3, 3] = t_inv
+
+    return T_inv
+
+def coEulerToQuat(c_wridt, c_finger):
+    matrix = matrixOriginToWrist(c_wridt[:3], c_wridt[3:])
+
+    g_target_th_po = matrix @ np.array([*c_finger[:3], 1])
+    g_eu = R.from_matrix(matrix[:3, :3] @ eulerRotationMatrix(*c_finger[3:])).as_euler('xyz', degrees=True)
+    g_target_th_eu = [*g_target_th_po[:3], *g_eu]
+    g_target_th_qu = [*g_target_th_eu[:3], *degToQuat(g_target_th_eu[3:])]
+
+    return g_target_th_qu

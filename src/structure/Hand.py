@@ -32,11 +32,11 @@ class Hand(ComplexStructure):
                 math.radians(0), # Wrist link
                 math.radians(0), # Meta 2
                 math.radians(0), # Meta 1
-                math.radians(-10), # Thumb 1
+                math.radians(-20), # Thumb 1
                 math.radians(20), # Thumb 2
-                math.radians(0), # Thumb 3
-                math.radians(0), # Thumb 4
-                math.radians(0), # Thumb 5
+                math.radians(-20), # Thumb 3
+                math.radians(40), # Thumb 4
+                math.radians(40), # Thumb 5
                 math.radians(0), # Thumb 6 fake
                 math.radians(0), # Index 1
                 math.radians(0), # index 2
@@ -63,7 +63,7 @@ class Hand(ComplexStructure):
             (10,  "Index_p1",   "index_p1", [0, 0,  0], [0, 0, 0], False),
             (11,  "Index_p2",   "index_p2", [0, 0,  0], [0, 0, 0], False),
             (12,  "Index_p3",   "index_p3", [0, 0,  0], [0, 0, 0], False),
-            (13,  "Index_p4",   "index_p4", [0, 0,  0], [0, 0, 0], True),
+            (13,  "Index_p4",   "index_p4", [0, 0,  0], [0, 0, 0], False),
         ]
 
         self.joint_actuator = [
@@ -73,12 +73,12 @@ class Hand(ComplexStructure):
             # (2, math.radians(-90),  math.radians(90)),
 
             # Thumb
-            (3, math.radians(-90), math.radians(90)),
-            # (4, math.radians(-90), math.radians(100)), # Thumb 1
-            (5, math.radians(-10), math.radians(90)), # Thumb 2
-            (6, math.radians(-0), math.radians(90)), # Thumb 3
-            (7, math.radians(-0), math.radians(90)), # Thumb 4
-            # (8, math.radians(-90), math.radians(90)), # Thumb 5
+            (3, math.radians(-180), math.radians(180)),
+            # (4, math.radians(-180), math.radians(100)), # Thumb 1
+            (5, math.radians(-180), math.radians(10)), # Thumb 2
+            (6, math.radians(-180), math.radians(180)), # Thumb 3
+            (7, math.radians(-180), math.radians(180)), # Thumb 4
+            (8, math.radians(-180), math.radians(180)), # Thumb 5
 
             # Index
             (9,  math.radians(-10), math.radians(10)),

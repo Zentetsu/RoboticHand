@@ -67,7 +67,7 @@ class ComplexStructure(BasicStructure):
             self.target.addObject("EulerImplicitSolver", firstOrder=True)
             self.target.addObject("CGLinearSolver", iterations=100, threshold=1e-2, tolerance=1e-5)
             self.target.addObject("MechanicalObject", name="dofs", template="Rigid3", position=target, showObject=1, showObjectScale=10, drawMode=1)
-            self.target.addObject("UncoupledConstraintCorrection")
+            self.target.addObject("UncoupledConstraintCorrection", defaultCompliance="0.1")
 
             self.rigid.addObject("PositionEffector", name="pe_" + str(i), template="Rigid3", indices=self.indice[i], effectorGoal=self.target.dofs.findData('position').getLinkPath(), useDirections=[1, 1, 1, 1, 1, 1])
 
