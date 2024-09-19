@@ -4,6 +4,7 @@ import Sofa
 from structure import Finger
 import numpy as np
 import math
+import copy
 
 from structure import BasicStructure
 
@@ -58,18 +59,26 @@ class ComplexStructure(BasicStructure):
     def inverseControl(self, target_position) -> None:
         print("Defining " + self.name + " goal...")
 
+        self.target = [None] * len(target_position)
+
         for i, target in enumerate(target_position):
             if target is None:
                 continue
 
-            self.target = self.node.addChild(self.name + "_EffectorTarget_" + str(i))
+            self.target[i] = self.node.addChild(self.name + "_EffectorTarget_" + str(i))
 
-            self.target.addObject("EulerImplicitSolver", firstOrder=True)
-            self.target.addObject("CGLinearSolver", iterations=100, threshold=1e-2, tolerance=1e-5)
-            self.target.addObject("MechanicalObject", name="dofs", template="Rigid3", position=target, showObject=1, showObjectScale=10, drawMode=1)
-            self.target.addObject("UncoupledConstraintCorrection", defaultCompliance="0.1")
+            self.target[i].addObject("EulerImplicitSolver", firstOrder=True)
+            self.target[i].addObject("CGLinearSolver", iterations=100, threshold=1e-2, tolerance=1e-5)
+            self.target[i].addObject("MechanicalObject", name="dofs", template="Rigid3", position=target, showObject=1, showObjectScale=10, drawMode=1)
+            self.target[i].addObject("UncoupledConstraintCorrection", defaultCompliance="0.1")
 
-            self.rigid.addObject("PositionEffector", name="pe_" + str(i), template="Rigid3", indices=self.indice[i], effectorGoal=self.target.dofs.findData('position').getLinkPath(), useDirections=[1, 1, 1, 1, 1, 1])
+            self.rigid.addObject("PositionEffector", name="pe_" + str(i), template="Rigid3", indices=self.indice[i], effectorGoal=self.target[i].dofs.findData('position').getLinkPath(), useDirections=[1, 1, 1, 1, 1, 1])
+
+    def updateTargetPosition(self, target_id, n_target_position):
+        if self.target[target_id] is None:
+            return
+
+        self.target[target_id].dofs.findData("position").setData = [n_target_position]
 
     @staticmethod
     def addCenter(node, name, parentIndex, childIndex, posOnParent, posOnChild, articulationProcess, isTranslation, isRotation, axis, articulationIndex):
