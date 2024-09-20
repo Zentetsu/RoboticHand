@@ -1,31 +1,22 @@
-from SharedMemory import SharedMemory
+from IRONbark import Module
 import ast
 
 if __name__ == "__main__":
-    pos = {
-        "wrist": [-100, 100, 250, 0, 0, 45],
-        "thumb": [-50.0, 120.0, 25.0, 170, 25, -75],
-        "index": [-80.0, 170.0, 15.0, 180, 90, 0],
-    }
-    C = SharedMemory(name="SOFA_pos", value=pos, client=True, size=1024)
+
+    Target_Module = Module(file="./data/Target_Module.json")
 
     t = None
 
     while t != "q":
+        print("Example: \n[\"wrist\", [-100, 100, 250, 0, 0, 45]]\n[\"wrist\", [0, 250, 205, 0, 0, 0]]")
         t = input()
-        # ["wrist", [-100, 100, 250, 0, 0, 45]]
-        # ["wrist", [0, 250, 205, 0, 0, 0]]
-
-        print(t)
 
         try:
             n_pos = ast.literal_eval(t)
-            pos[n_pos[0]] = n_pos[1]
-
-            C.setValue(pos)
+            Target_Module["target"][n_pos[0]] = n_pos[1]
         except:
             print("ERROR")
             continue
 
 
-    C.close()
+    Target_Module.stopModule()

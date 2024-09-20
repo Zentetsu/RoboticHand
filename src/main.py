@@ -1,21 +1,25 @@
 from structure import Arm, Hand, BasicStructure
 from tools import *
 
-from SharedMemory import SharedMemory
+from IRONbark import Module
 import threading
 import time
 import os
 
 
 def checkSharedMemory(arm: Arm, hand: Hand) -> None:
-    S = SharedMemory(name="SOFA_pos", client=False)
+    SOFA_Module = Module(file=os.environ['PHDPATH']  + "/RoboticHand/data/SOFA_Module.json")
 
-    while S.getAvailability():
+    while SOFA_Module.getLSAvailability(listener=True)[1][0]:
         time.sleep(1)
+
         try:
-            target_wrist = S.getValue()["wrist"]
-            target_thumb = S.getValue()["thumb"]
-            target_index = S.getValue()["index"]
+            target_wrist = SOFA_Module["target"]["wrist"]
+            # print(target_wrist)
+            target_thumb = SOFA_Module["target"]["thumb"]
+            # print(target_thumb)
+            target_index = SOFA_Module["target"]["index"]
+            # print(target_index)
 
             target_forearm = getForearmFromHand(target_wrist, -48)
             arm.updateTargetPosition(0, target_forearm)
@@ -26,10 +30,14 @@ def checkSharedMemory(arm: Arm, hand: Hand) -> None:
             g_target_in_qu = coEulerToQuat(target_wrist, target_index)
             hand.updateTargetPosition(1, g_target_in_qu)
 
+            c_angles = arm.getPosition()
+
+            for i in range(0, len(c_angles)):
+                SOFA_Module["sofa"]["a" + str(i)] = c_angles[i]
         except:
             pass
 
-    S.close()
+    SOFA_Module.stopModule()
 
 def createScene(root) -> None:
     path = os.environ['PHDPATH'] + "/RoboticHand/model/"

@@ -1,7 +1,7 @@
 import SofaRuntime
 import Sofa
 
-from structure import Finger
+from scipy.spatial.transform import Rotation as R
 import numpy as np
 import math
 import copy
@@ -79,6 +79,17 @@ class ComplexStructure(BasicStructure):
             return
 
         self.target[target_id].dofs.findData("position").setData = [n_target_position]
+
+    def getPosition(self):
+        angles = [0] * len(self.mo.position.value)
+
+        d_angle = np.array([0, 0, 0])
+
+        for i in range(0, len(angles)):
+            angles[i] = list(R.from_quat(self.mo.position.value[i][3:]).as_euler('xyz', degrees=True) - d_angle)
+            d_angle = d_angle + np.array(angles[i])
+
+        return angles
 
     @staticmethod
     def addCenter(node, name, parentIndex, childIndex, posOnParent, posOnChild, articulationProcess, isTranslation, isRotation, axis, articulationIndex):
