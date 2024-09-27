@@ -63,7 +63,7 @@ class Hand(ComplexStructure):
             (10,  "Index_p1",   "index_p1", [0, 0,  0], [0, 0, 0], False),
             (11,  "Index_p2",   "index_p2", [0, 0,  0], [0, 0, 0], False),
             (12,  "Index_p3",   "index_p3", [0, 0,  0], [0, 0, 0], False),
-            (13,  "Index_p4",   "index_p4", [0, 0,  0], [0, 0, 0], False),
+            (13,  "Index_p4",   "index_p4", [0, 0,  0], [0, 0, 0], True),
         ]
 
         self.joint_actuator = [

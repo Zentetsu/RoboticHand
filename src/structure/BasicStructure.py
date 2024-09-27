@@ -48,7 +48,7 @@ class BasicStructure():
 
         self.ext = ".obj"
 
-    def createStructure(self, solver=None, constraint=False) -> None:
+    def createStructure(self, solver=None, collision=False, constraint=False, type_c=0) -> None:
         print("Create " + self.name + "...")
 
         self.structure = self.node.addChild(self.name)
@@ -57,11 +57,19 @@ class BasicStructure():
             self.structure.addObject("EulerImplicitSolver", rayleighMass=0.01)
             self.structure.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d")
         elif solver == "CGLinearSolver":
-            self.structure.addObject("EulerImplicitSolver")
-            self.structure.addObject("CGLinearSolver", threshold=1e-5, tolerance=1e-5, iterations=50)
+            self.structure.addObject("EulerImplicitSolver", rayleighStiffness=0.1, rayleighMass=0.1)
+            self.structure.addObject("CGLinearSolver", threshold=1e-5, tolerance=1e-5, iterations=25)
 
+        if "ComplexStructure" not in str(type(self).__base__):
+            self.structure.addObject("MechanicalObject", name="Rigid_DOF", template="Rigid3", position=self.positions[0])
+
+            if collision:
+                self.structure.addObject("UniformMass", totalMass=10.0)
+
+        print("constretggg", constraint)
         if constraint:
-            self.structure.addObject("GenericConstraintCorrection")#, linearSolver="@../Solver")
+            print("constretggg")
+            self.structure.addObject("UncoupledConstraintCorrection" if type_c else "GenericConstraintCorrection")#, linearSolver="@../Solver")
 
     def createRigid(self, collision=False) -> None:
         print("Create " + self.name + " rigid...")
@@ -79,9 +87,10 @@ class BasicStructure():
         if self.visu is None:
             self.visu = self.structure
 
-        complx = "ComplexStructure" in str(type(self).__base__)
+        if self.rigid is None:
+            self.rigid = self.structure
 
-        print(str(type(self).__base__), "ComplexStructure" in str(type(self).__base__))
+        complx = "ComplexStructure" in str(type(self).__base__)
 
         for i, info in enumerate(self.visu_info):
             print(info[5])
@@ -98,38 +107,43 @@ class BasicStructure():
 
         BasicStructure.addMesh(part, name, filename)
 
-        if complx and rigid:
+        if complx:
             part.addObject("MechanicalObject", template="Rigid3", position=position)
             part.addObject("RigidMapping", index=index, globalToLocalCoords=False)
 
-        if collision:
-            BasicStructure.addCollision(part, name)
+        BasicStructure.addVisu(part, name, index, translation, rotation, color, rigid, complx)
 
-        BasicStructure.addVisu(part, name, index, translation, rotation, color, rigid)
+        if collision:
+            BasicStructure.addCollision(part, name, complx)
 
     @staticmethod
-    def addVisu(node, name, index, translation, rotation, color, rigid) -> None:
+    def addVisu(node, name, index, translation, rotation, color, rigid, complx) -> None:
         print("Add visu " + name + "...")
 
         visu = node.addChild("Visu_"+str(index))
 
         visu.addObject("OglModel", name="VisualModel", src="@../" + name, color=color, translation=translation, rotation=rotation, scale=1)
 
-        if rigid:
-            visu.addObject("RigidMapping")
+        if rigid and not complx:
+            visu.addObject("RigidMapping", input="@../Rigid_DOF", output="@VisualModel")
+        elif rigid:
+            visu.addObject("RigidMapping", output="@VisualModel")
 
     @staticmethod
-    def addCollision(node, name) -> None:
+    def addCollision(node, name, complx) -> None:
         print("Add collision " + name + "...")
 
         collision = node.addChild("Collision")
 
         collision.addObject("MeshTopology", src="@../" + name)
-        collision.addObject("MechanicalObject")
+        collision.addObject("MechanicalObject", name="Collision_RM")
         collision.addObject("TriangleCollisionModel")
         collision.addObject("LineCollisionModel")
         collision.addObject("PointCollisionModel")
-        collision.addObject("RigidMapping")
+        if complx:
+            collision.addObject("RigidMapping")
+        else:
+            collision.addObject("RigidMapping", input="@../Rigid_DOF", output="@Collision_RM")
 
     @staticmethod
     def addMesh(node, name, filename) -> None:

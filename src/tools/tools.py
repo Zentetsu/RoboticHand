@@ -46,18 +46,21 @@ def initScene(node, path, ground=False) -> None:
     node.addObject("VisualStyle", displayFlags="showVisualModels showBehaviorModels showInteractionForceFields", bbox=[-1,-1,-1,1,1,1])
 
     # Collision
-    node.gravity = [0, 0, -9810]
+    node.gravity = [0, 0, -9.810]
     node.dt = 0.01
     # node.addObject("GenericConstraintSolver", tolerance=1e-7, maxIterations=1000)
     node.addObject("CollisionPipeline")
     node.addObject("ParallelBruteForceBroadPhase")
     node.addObject("ParallelBVHNarrowPhase")
+    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=0.2, contactDistance=0.09, angleCone=0.0)
     node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=0.6")
-    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=0.6, contactDistance=0.3)
-    # node.addObject('NewProximityIntersection', alarmDistance=0.6, contactDistance=0.3)
+    node.addObject('NewProximityIntersection', alarmDistance=0.6, contactDistance=0.3)
+    # node.addObject('MinProximityIntersection', alarmDistance=1.0, contactDistance=0.5)
 
     # Inverse solver
-    node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=1e-6, epsilon=0.001, printLog=False)
+
+    # node.addObject("LCPConstraintSolver", maxIt=1000, tolerance=0.001)
+    node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=0.001, epsilon=0.001, printLog=False)
 
     if ground:
         addGround(node, path)
@@ -70,7 +73,7 @@ def addGround(node, path) -> None:
     ground.addObject("MeshOBJLoader", name="loader", filename=path + "Ground.obj", rotation=[270, 0, 0], scale=1, translation=[0, 0, 0])
     ground.addObject("MeshTopology", src="@loader")
     ground.addObject("MechanicalObject", src="@loader")
-    ground.addObject("TriangleCollisionModel")
+    ground.addObject("TriangleCollisionModel", moving=0, simulated=0)
     ground.addObject("LineCollisionModel")
     ground.addObject("PointCollisionModel")
     ground.addObject("OglModel", name="Visual", src="@loader", color=[0.5, 0.5, 0.5, 1])

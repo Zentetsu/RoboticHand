@@ -47,16 +47,15 @@ def createScene(root) -> None:
 
     sim = root.addChild("Simulation")
 
-    # cube = BasicStructure(
-    #     sim,
-    #     path + "Others/",
-    #     "Cube",
-    #     positions=[[-125, 350, 50, 0, 0, 0, 1]],
-    #     visu_info=[(0, "Cube", "Cube", [0, 0, 0], [0, 0, 0], True)]
-    # )
-    # cube.createStructure(solver="SparseLDLSolver", constraint=True)
-    # cube.createRigid(collision=True)
-    # cube.createVisualization()
+    cube = BasicStructure(
+        sim,
+        path + "Others/",
+        "Cube",
+        positions=[[-125, 350, 50, 0, 0, 0, 1]],
+        visu_info=[(0, "Cube", "Cube", [0, 0, 0], [0, 0, 0], True)]
+    )
+    cube.createStructure(solver="SparseLDLSolver", collision=True, constraint=True, type_c=1)
+    cube.createVisualization()
 
     target_wrist = [0, 250, 205, 0, 0, 0]
     target_forearm = getForearmFromHand(target_wrist, -48)

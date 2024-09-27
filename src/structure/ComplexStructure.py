@@ -16,7 +16,7 @@ class ComplexStructure(BasicStructure):
         super().__init__(node, path, name, translation, rotation, positions, init_angles, visu_info)
 
     def createStructure(self, solver=None, constraint=False) -> None:
-        super().createStructure(solver, constraint)
+        super().createStructure(solver, constraint=constraint)
 
         self.structure.addData("angles", self.init_angles, None, self.name + " angles", "", "vector<float>")
 
@@ -36,7 +36,7 @@ class ComplexStructure(BasicStructure):
         for joint in self.joint_actuator:
             self.articulation.addObject("JointActuator", name="joint_" + str(joint[0]), index=joint[0], maxAngleVariation=0.001, minAngle=joint[1], maxAngle=joint[2])
 
-        # self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e10, points=[i for i in range(0, len(self.init_angles))])
+        self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e5, points=[i for i in range(0, len(self.init_angles))])
 
     def createRigid(self) -> None:
         print("Create " + self.name + " rigid...")
