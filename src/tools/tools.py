@@ -46,7 +46,7 @@ def initScene(node, path, ground=False) -> None:
     node.addObject("VisualStyle", displayFlags="showVisualModels showBehaviorModels showInteractionForceFields", bbox=[-1,-1,-1,1,1,1])
 
     # Collision
-    node.gravity = [0, 0, -9.810]
+    node.gravity = [0, 0, -98.10]
     node.dt = 0.01
     # node.addObject("GenericConstraintSolver", tolerance=1e-7, maxIterations=1000)
     node.addObject("CollisionPipeline")

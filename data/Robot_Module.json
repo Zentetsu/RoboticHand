@@ -1,0 +1,9 @@
+{
+    "name": "robot",
+    "sender": {
+        "robot": {}
+    },
+    "listener": [
+        "sofa"
+    ]
+}

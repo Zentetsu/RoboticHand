@@ -36,7 +36,7 @@ class ComplexStructure(BasicStructure):
         for joint in self.joint_actuator:
             self.articulation.addObject("JointActuator", name="joint_" + str(joint[0]), index=joint[0], maxAngleVariation=0.001, minAngle=joint[1], maxAngle=joint[2])
 
-        self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e5, points=[i for i in range(0, len(self.init_angles))])
+        # self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e1, points=[i for i in range(0, len(self.init_angles))])
 
     def createRigid(self) -> None:
         print("Create " + self.name + " rigid...")
@@ -85,11 +85,17 @@ class ComplexStructure(BasicStructure):
 
         d_angle = np.array([0, 0, 0])
 
-        for i in range(0, len(angles)):
+        angles_ = []
+
+        for i in range(1, len(angles)):
             angles[i] = list(R.from_quat(self.mo.position.value[i][3:]).as_euler('xyz', degrees=True) - d_angle)
             d_angle = d_angle + np.array(angles[i])
 
-        return angles
+            if self.articulation_info[i-1][5] == 1:
+                # print(np.round(angles[i], 2), self.articulation_info[i-1][6], round(np.dot(np.array(angles[i]), np.array(self.articulation_info[i-1][6])), 2))
+                angles_.append(round(np.dot(np.array(angles[i]), np.array(self.articulation_info[i-1][6])), 2))
+
+        return angles_
 
     @staticmethod
     def addCenter(node, name, parentIndex, childIndex, posOnParent, posOnChild, articulationProcess, isTranslation, isRotation, axis, articulationIndex):
