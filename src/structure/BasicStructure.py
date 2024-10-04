@@ -54,7 +54,7 @@ class BasicStructure():
         self.structure = self.node.addChild(self.name)
 
         if solver == "SparseLDLSolver":
-            self.structure.addObject("EulerImplicitSolver", rayleighMass=0.01)
+            self.structure.addObject("EulerImplicitSolver", rayleighStiffness=1e-2, rayleighMass=1e-2)
             self.structure.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d")
         elif solver == "CGLinearSolver":
             self.structure.addObject("EulerImplicitSolver", rayleighStiffness=0.1, rayleighMass=0.1)
@@ -64,11 +64,9 @@ class BasicStructure():
             self.structure.addObject("MechanicalObject", name="Rigid_DOF", template="Rigid3", position=self.positions[0])
 
             if collision:
-                self.structure.addObject("UniformMass", totalMass=10.0)
+                self.structure.addObject("UniformMass", totalMass=500)
 
-        print("constretggg", constraint)
         if constraint:
-            print("constretggg")
             self.structure.addObject("UncoupledConstraintCorrection" if type_c else "GenericConstraintCorrection")#, linearSolver="@../Solver")
 
     def createRigid(self, collision=False) -> None:

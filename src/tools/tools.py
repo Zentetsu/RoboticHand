@@ -43,24 +43,24 @@ def initScene(node, path, ground=False) -> None:
     print("Init scene...")
 
     node.addObject("FreeMotionAnimationLoop")
-    node.addObject("VisualStyle", displayFlags="showVisualModels showBehaviorModels showInteractionForceFields", bbox=[-1,-1,-1,1,1,1])
+    node.addObject("VisualStyle", displayFlags="showVisualModels showBehaviorModels showInteractionForceFields", bbox=[-1, -1, -1, 1, 1, 1])
 
     # Collision
-    node.gravity = [0, 0, -98.10]
+    node.gravity = [0, 0, -9810.0]
     node.dt = 0.01
     # node.addObject("GenericConstraintSolver", tolerance=1e-7, maxIterations=1000)
     node.addObject("CollisionPipeline")
     node.addObject("ParallelBruteForceBroadPhase")
     node.addObject("ParallelBVHNarrowPhase")
-    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=0.2, contactDistance=0.09, angleCone=0.0)
+    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=2, contactDistance=1, angleCone=0.0)
     node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=0.6")
-    node.addObject('NewProximityIntersection', alarmDistance=0.6, contactDistance=0.3)
+    node.addObject('NewProximityIntersection', alarmDistance=2, contactDistance=1)
     # node.addObject('MinProximityIntersection', alarmDistance=1.0, contactDistance=0.5)
 
     # Inverse solver
 
     # node.addObject("LCPConstraintSolver", maxIt=1000, tolerance=0.001)
-    node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=0.001, epsilon=0.001, printLog=False)
+    node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=1e-2, epsilon=1e-2, printLog=False)
 
     if ground:
         addGround(node, path)
@@ -87,7 +87,7 @@ def launchGUI(root) -> None:
     else:
         Sofa.Gui.GUIManager.Init("Scene", "qglviewer")
         Sofa.Gui.GUIManager.createGUI(root, __file__)
-        Sofa.Gui.GUIManager.SetDimension(1080, 1080)
+        Sofa.Gui.GUIManager.SetDimension(1920, 1080)
         Sofa.Gui.GUIManager.MainLoop(root)
         Sofa.Gui.GUIManager.closeGUI()
 

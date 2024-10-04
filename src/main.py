@@ -206,14 +206,14 @@ def createScene(root) -> None:
     path = os.environ['PHDPATH'] + "/RoboticHand/model/"
 
     addPlugins(root)
-    initScene(root, path + "Others/", ground=False)
+    initScene(root, path + "Others/", ground=True)
 
     sim = root.addChild("Simulation")
     arm, hand = None, None
 
-    # createCube(sim, path)
+    createCube(sim, path)
 
-    target_wrist = [0, 500, 300, 0, 45, 0]
+    target_wrist = [0, 500, 300, 0, 0, 0]
     arm = createArm750(sim, path, target_wrist)
 
     # matrix = matrixOriginToWrist(target_wrist[:3], target_wrist[3:])
@@ -233,8 +233,8 @@ def createScene(root) -> None:
     #     w_target_in_eu
     # ])
 
-    thread = threading.Thread(target=checkSharedMemory, args=(arm, hand))
-    thread.start()
+    # thread = threading.Thread(target=checkSharedMemory, args=(arm, hand))
+    # thread.start()
 
 if __name__ == "__main__":
     root = Sofa.Core.Node("root")
