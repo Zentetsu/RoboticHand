@@ -27,6 +27,7 @@ def addPlugins(node) -> None:
         "Sofa.Component.ODESolver.Backward",
         "Sofa.Component.Mapping.NonLinear",
         "Sofa.Component.Mapping.Linear",
+        "Sofa.Component.MechanicalLoad",
         "Sofa.Component.StateContainer",
         "Sofa.Component.AnimationLoop",
         "Sofa.Component.IO.Mesh",
@@ -52,13 +53,12 @@ def initScene(node, path, ground=False) -> None:
     node.addObject("CollisionPipeline")
     node.addObject("ParallelBruteForceBroadPhase")
     node.addObject("ParallelBVHNarrowPhase")
-    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=2, contactDistance=1, angleCone=0.0)
-    node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=0.6")
-    node.addObject('NewProximityIntersection', alarmDistance=2, contactDistance=1)
+    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=5, contactDistance=0.01)
+    node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=1")
+    node.addObject('NewProximityIntersection', alarmDistance=5, contactDistance=0.01)
     # node.addObject('MinProximityIntersection', alarmDistance=1.0, contactDistance=0.5)
 
     # Inverse solver
-
     # node.addObject("LCPConstraintSolver", maxIt=1000, tolerance=0.001)
     node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=1e-2, epsilon=1e-2, printLog=False)
 
@@ -70,12 +70,12 @@ def addGround(node, path) -> None:
 
     ground = node.addChild("Ground")
 
-    ground.addObject("MeshOBJLoader", name="loader", filename=path + "Ground.obj", rotation=[270, 0, 0], scale=1, translation=[0, 0, 0])
+    ground.addObject("MeshSTLLoader", name="loader", filename=path + "Ground.stl", rotation=[0, 0, 0], scale=1, translation=[0, 0, 0])
     ground.addObject("MeshTopology", src="@loader")
     ground.addObject("MechanicalObject", src="@loader")
     ground.addObject("TriangleCollisionModel", moving=0, simulated=0)
-    ground.addObject("LineCollisionModel")
-    ground.addObject("PointCollisionModel")
+    ground.addObject("LineCollisionModel", moving=0, simulated=0)
+    ground.addObject("PointCollisionModel", moving=0, simulated=0)
     ground.addObject("OglModel", name="Visual", src="@loader", color=[0.5, 0.5, 0.5, 1])
 
 def launchGUI(root) -> None:

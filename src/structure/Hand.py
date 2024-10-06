@@ -117,7 +117,7 @@ class Hand(ComplexStructure):
         self.indice = [9, 14]
 
     def attachToRobot(self) -> None:
-        self.node.addObject('RigidMapping', input="@./Arm/Articulation/Rigid/dofs", output="@./Hand/Articulation/Rigid/dofs", index=9)
+        self.node.addObject('RigidMapping', input="@./Arm/Articulation/Rigid/dofs", output="@./Hand/Articulation/Rigid/dofs", index=6)
 
         rotation_quat = R.from_euler('xyz', [0, math.radians(90), math.radians(90)]).as_quat()
         new_pos = copy.copy(self.mo.position.value)

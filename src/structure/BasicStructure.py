@@ -46,7 +46,7 @@ class BasicStructure():
         self.collision = None
         self.indice = 0
 
-        self.ext = ".obj"
+        self.ext = ".msh"
 
     def createStructure(self, solver=None, collision=False, constraint=False, type_c=0) -> None:
         print("Create " + self.name + "...")
@@ -54,7 +54,7 @@ class BasicStructure():
         self.structure = self.node.addChild(self.name)
 
         if solver == "SparseLDLSolver":
-            self.structure.addObject("EulerImplicitSolver", rayleighStiffness=1e-2, rayleighMass=1e-2)
+            self.structure.addObject("EulerImplicitSolver", rayleighStiffness=1e-3, rayleighMass=1e-3)
             self.structure.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d")
         elif solver == "CGLinearSolver":
             self.structure.addObject("EulerImplicitSolver", rayleighStiffness=0.1, rayleighMass=0.1)
@@ -64,7 +64,7 @@ class BasicStructure():
             self.structure.addObject("MechanicalObject", name="Rigid_DOF", template="Rigid3", position=self.positions[0])
 
             if collision:
-                self.structure.addObject("UniformMass", totalMass=500)
+                self.structure.addObject("UniformMass", totalMass=0.005)
 
         if constraint:
             self.structure.addObject("UncoupledConstraintCorrection" if type_c else "GenericConstraintCorrection")#, linearSolver="@../Solver")
@@ -112,7 +112,7 @@ class BasicStructure():
         BasicStructure.addVisu(part, name, index, translation, rotation, color, rigid, complx)
 
         if collision:
-            BasicStructure.addCollision(part, name, complx)
+            BasicStructure.addCollision(part, name, complx, translation=translation, rotation=rotation)
 
     @staticmethod
     def addVisu(node, name, index, translation, rotation, color, rigid, complx) -> None:
@@ -128,13 +128,13 @@ class BasicStructure():
             visu.addObject("RigidMapping", output="@VisualModel")
 
     @staticmethod
-    def addCollision(node, name, complx) -> None:
+    def addCollision(node, name, complx, translation, rotation) -> None:
         print("Add collision " + name + "...")
 
         collision = node.addChild("Collision")
 
         collision.addObject("MeshTopology", src="@../" + name)
-        collision.addObject("MechanicalObject", name="Collision_RM")
+        collision.addObject("MechanicalObject", name="Collision_RM", translation=translation, rotation=rotation)
         collision.addObject("TriangleCollisionModel")
         collision.addObject("LineCollisionModel")
         collision.addObject("PointCollisionModel")
@@ -149,5 +149,7 @@ class BasicStructure():
 
         if filename[-3:len(filename)] == "stl":
             node.addObject("MeshSTLLoader", name=name, filename=filename, scale=1)
-        else:
+        elif filename[-3:len(filename)] == "obj":
             node.addObject("MeshOBJLoader", name=name, filename=filename, scale=1)
+        elif filename[-3:len(filename)] == "msh":
+            node.addObject('MeshGmshLoader', name=name, filename=filename, createSubelements=True, flipNormals=0, scale=1)

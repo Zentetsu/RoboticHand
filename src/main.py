@@ -16,7 +16,7 @@ def checkSharedMemory(arm: Arm, hand: Hand) -> None:
         try:
             if arm is not None:
                 target_wrist = SOFA_Module["target"]["wrist"]
-                print(target_wrist)
+                # print(target_wrist)
                 target_forearm = getForearmFromHand(target_wrist, -48)
                 arm.updateTargetPosition(0, target_forearm)
 
@@ -24,28 +24,28 @@ def checkSharedMemory(arm: Arm, hand: Hand) -> None:
 
                 SOFA_Module["sofa"]["angles"] = c_angles
 
-            # if hand is not None:
-            #     target_thumb = SOFA_Module["target"]["thumb"]
-            #     # print(target_thumb)
-            #     g_target_th_qu = coEulerToQuat(target_wrist, target_thumb)
-            #     hand.updateTargetPosition(0, g_target_th_qu)
+            if hand is not None:
+                target_thumb = SOFA_Module["target"]["thumb"]
+                g_target_th_qu = coEulerToQuat(target_wrist, target_thumb)
+                # print(g_target_th_qu)
+                hand.updateTargetPosition(0, g_target_th_qu)
 
-            #     target_index = SOFA_Module["target"]["index"]
-            #     print(target_index)
-            #     g_target_in_qu = coEulerToQuat(target_wrist, target_index)
-            #     hand.updateTargetPosition(1, g_target_in_qu)
+                target_index = SOFA_Module["target"]["index"]
+                # print(target_index)
+                g_target_in_qu = coEulerToQuat(target_wrist, target_index)
+                hand.updateTargetPosition(1, g_target_in_qu)
 
         except:
             pass
 
     SOFA_Module.stopModule(name="sofa")
 
-def createCube(node, path) -> None:
+def createCube(node, path, position) -> None:
     cube = BasicStructure(
         node,
         path + "Others/",
         "Cube",
-        positions=[[-125, 350, 50, 0, 0, 0, 1]],
+        positions=[position],
         visu_info=[(0, "Cube", "Cube", [0, 0, 0], [0, 0, 0], True)]
     )
     cube.createStructure(solver="SparseLDLSolver", collision=True, constraint=True, type_c=1)
@@ -211,9 +211,11 @@ def createScene(root) -> None:
     sim = root.addChild("Simulation")
     arm, hand = None, None
 
-    createCube(sim, path)
+    cube_pos = [0, 57+327.91+79-15, 173.9+303+50, 0, 0, 0, 1] #top of the arm
+    cube_pos =[-125, 350, 70, 0, 0, 0, 1] # on the floor
+    createCube(sim, path, cube_pos)
 
-    target_wrist = [0, 500, 300, 0, 0, 0]
+    target_wrist = [0, 57+327.91+79, 173.9+303, 0, 0, 0] #Origin pos for top cube
     arm = createArm750(sim, path, target_wrist)
 
     # matrix = matrixOriginToWrist(target_wrist[:3], target_wrist[3:])
@@ -226,15 +228,15 @@ def createScene(root) -> None:
     # w_target_th_eu = [*w_target_th_eu[:3], *g_target_th_eu[3:]]
     # print(w_target_th_eu)
 
-    # w_target_th_eu = [-50.0, 120.0, 25.0, 170, 25, -75]
-    # w_target_in_eu = [-80.0, 170.0, 15.0, 180, 90, 0]
-    # hand = createHand(sim, path, target_wrist, [
-    #     w_target_th_eu,
-    #     w_target_in_eu
-    # ])
+    w_target_th_eu = [-50.0, 120.0, 25.0, 170, 25, -75]
+    w_target_in_eu = [-80.0, 170.0, 15.0, 180, 90, 0]
+    hand = createHand(sim, path, target_wrist, [
+        w_target_th_eu,
+        w_target_in_eu
+    ])
 
-    # thread = threading.Thread(target=checkSharedMemory, args=(arm, hand))
-    # thread.start()
+    thread = threading.Thread(target=checkSharedMemory, args=(arm, hand))
+    thread.start()
 
 if __name__ == "__main__":
     root = Sofa.Core.Node("root")

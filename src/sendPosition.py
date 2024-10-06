@@ -4,6 +4,7 @@ from scipy.signal import butter, lfilter
 from filterpy.kalman import KalmanFilter
 from bleak import BleakClient
 import numpy as np
+import threading
 import asyncio
 import signal
 import time
@@ -193,6 +194,73 @@ def handler(signum, frame):
     global loop_
     loop_ = False
 
+
+from pynput.keyboard import Listener, Key
+import time
+
+class ControllerKB:
+    def __new__(cls, verbose=False):
+        if not hasattr(cls, 'instance') or not cls.instance:
+            cls.instance = super().__new__(cls)
+            cls.instance.ControllerKB(verbose)
+
+        return cls.instance
+
+    def ControllerKB(self, verbose):
+        self.verbose = verbose
+
+        self.command = {'w': False, 's': False, 'a': False, 'd': False, 'p': False, 'shift': False, 'alt': False, 'esc': False, 'up': False, 'down': False, 'left': False, 'right': False}
+
+    def readInput(self):
+        with Listener(on_press=self.on_press, on_release=self.on_release) as listener:
+            listener.join()
+
+    def on_press(self, key):
+        try:
+            print(key)
+            if key.char in self.command:
+                self.command[key.char] = True
+        except:
+            if key == Key.esc:
+                self.command['esc'] = True
+                return False
+
+            if key == key.shift:
+                self.command['shift'] = True
+            if key == key.alt:
+                self.command['alt'] = True
+            if key == key.up:
+                self.command['up'] = True
+            if key == key.down:
+                self.command['down'] = True
+            if key == key.left:
+                self.command['left'] = True
+            if key == key.right:
+                self.command['right'] = True
+
+    def on_release(self, key):
+        try:
+            if key.char in self.command:
+                self.command[key.char] = False
+
+        except:
+            if key == key.shift:
+                self.command['shift'] = False
+            if key == key.alt:
+                self.command['alt'] = False
+            if key == key.up:
+                self.command['up'] = False
+            if key == key.down:
+                self.command['down'] = False
+            if key == key.left:
+                self.command['left'] = False
+            if key == key.right:
+                self.command['right'] = False
+
+    def getInput(self):
+        return self.command
+
+
 if __name__ == "__main__":
     # loop_ = True
     # signal.signal(signal.SIGINT, handler)
@@ -209,31 +277,40 @@ if __name__ == "__main__":
 
     t = None
 
-    while t != "q":
-        print("Example: \n[\"wrist\", [-100, 100, 250, 0, 0, 45]]\n[\"wrist\", [0, 250, 205, 0, 0, 0]]")
-        # ["wrist", [0, 250, 175, 0, 0, 0]]
-        # ["wrist", [0, 200, 150, 0, 0, 0]]
-        # ["wrist", [0, 200, 100, 0, 0, 0]]
-        # ["index", [-50.0, 170.0, 15.0, 180, 90, 0]]
-        # ["wrist", [0, 200, 75, 0, 0, 0]]
-        # ["wrist", [0, 200, 60, 0, 0, 0]]
-        # ["index", [-50.0, 170.0, 15.0, 180, 90, 0]]
-        # ["index", [-75.0, 170.0, 0.0, 180, 90, 0]]
-        # ["index", [-78.0, 170.0, 0.0, 180, 90, 0]]
-        # ["index", [-79.0, 170.0, 0.0, 180, 90, 0]]
-        # ["index", [-85.0, 170.0, 0.0, 180, 90, 0]]
+    cKB = ControllerKB()
+    thread = threading.Thread(target=cKB.readInput, args=())
+    thread.start()
 
+    while not cKB.getInput()["esc"]:
+        time.sleep(0.1)
+        print(Target_Module["target"]["wrist"])
 
-        # ["wrist", [0, 500, 400, 0, 0, 0]]
+        old = Target_Module["target"]["wrist"]
+        old2 = Target_Module["target"]["index"]
 
-        t = input()
+        if cKB.getInput()["w"]:
+            old[0] += 1
+        elif cKB.getInput()["s"]:
+            old[0] -= 1
+        elif cKB.getInput()["a"]:
+            old[1] -= 1
+        elif cKB.getInput()["d"]:
+            old[1] += 1
+        elif cKB.getInput()["shift"]:
+            old[2] += 1
+        elif cKB.getInput()["alt"]:
+            old[2] -= 1
 
-        try:
-            n_pos = ast.literal_eval(t)
-            Target_Module["target"][n_pos[0]] = n_pos[1]
-        except:
-            print("ERROR")
-            continue
+        if cKB.getInput()["up"]:
+            old2[0] += 0.1
+        elif cKB.getInput()["down"]:
+            old2[0] -= 0.1
+        elif cKB.getInput()["left"]:
+            old2[1] -= 0.1
+        elif cKB.getInput()["right"]:
+            old2[1] += 0.1
 
+        Target_Module["target"]["wrist"] = old
+        Target_Module["target"]["index"] = old2
 
     Target_Module.stopModule()
