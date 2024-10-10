@@ -1,7 +1,9 @@
 import SofaRuntime
 import Sofa
 
+from scipy.spatial.transform import Rotation as R
 from structure import ComplexStructure
+import numpy as np
 import math
 
 
@@ -34,3 +36,17 @@ class Arm(ComplexStructure):
                 articullation[7])
 
         self.indice = [len(self.articulation_info)]
+
+    def getPosition(self):
+        angles = [0] * len(self.mo.position.value)
+        d_angle = np.array([0, 0, 0])
+        angles_ = []
+
+        for i in range(1, len(angles)):
+            angles[i] = list(R.from_quat(self.mo.position.value[i][3:]).as_euler('xyz', degrees=True) - d_angle)
+            d_angle = d_angle + np.array(angles[i])
+
+            if self.articulation_info[i-1][5] == 1:
+                angles_.append(round(np.dot(np.array(angles[i]), np.array(self.articulation_info[i-1][6])), 2))
+
+        return angles_

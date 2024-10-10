@@ -1,7 +1,6 @@
 import SofaRuntime
 import Sofa
 
-from structure import Finger
 import numpy as np
 import math
 
@@ -46,7 +45,7 @@ class BasicStructure():
         self.collision = None
         self.indice = 0
 
-        self.ext = ".msh"
+        self.ext = ".stl"
 
     def createStructure(self, solver=None, collision=False, constraint=False, type_c=0) -> None:
         print("Create " + self.name + "...")
@@ -57,7 +56,7 @@ class BasicStructure():
             self.structure.addObject("EulerImplicitSolver", rayleighStiffness=1e-3, rayleighMass=1e-3)
             self.structure.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d")
         elif solver == "CGLinearSolver":
-            self.structure.addObject("EulerImplicitSolver", rayleighStiffness=0.1, rayleighMass=0.1)
+            self.structure.addObject("EulerImplicitSolver")#, rayleighStiffness=1e-3, rayleighMass=1e-3)
             self.structure.addObject("CGLinearSolver", threshold=1e-5, tolerance=1e-5, iterations=25)
 
         if "ComplexStructure" not in str(type(self).__base__):

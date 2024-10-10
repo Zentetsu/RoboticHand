@@ -1,0 +1,10 @@
+{
+    "name": "sofa_g",
+    "sender": {
+        "sofa_g": {}
+    },
+    "listener": [
+        "sofa_i",
+        "target"
+    ]
+}

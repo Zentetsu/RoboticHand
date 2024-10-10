@@ -6,7 +6,7 @@ from scipy.spatial.transform import Rotation as R
 import numpy as np
 import math
 
-USE_GUI = True
+USE_GUI = False
 
 
 def addPlugins(node) -> None:
@@ -40,27 +40,30 @@ def addPlugins(node) -> None:
         "MultiThreading",
     ])
 
-def initScene(node, path, ground=False) -> None:
+def initScene(node, path, ground=False, generic_solver=0) -> None:
     print("Init scene...")
 
     node.addObject("FreeMotionAnimationLoop")
     node.addObject("VisualStyle", displayFlags="showVisualModels showBehaviorModels showInteractionForceFields", bbox=[-1, -1, -1, 1, 1, 1])
 
-    # Collision
     node.gravity = [0, 0, -9810.0]
     node.dt = 0.01
-    # node.addObject("GenericConstraintSolver", tolerance=1e-7, maxIterations=1000)
+
+    if generic_solver:
+        node.addObject("GenericConstraintSolver", tolerance=1e-7, maxIterations=1000)
+
     node.addObject("CollisionPipeline")
     node.addObject("ParallelBruteForceBroadPhase")
     node.addObject("ParallelBVHNarrowPhase")
-    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=5, contactDistance=0.01)
     node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=1")
-    node.addObject('NewProximityIntersection', alarmDistance=5, contactDistance=0.01)
-    # node.addObject('MinProximityIntersection', alarmDistance=1.0, contactDistance=0.5)
+    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=5, contactDistance=1)
+    # node.addObject('NewProximityIntersection', alarmDistance=5, contactDistance=1)
+    # node.addObject('MinProximityIntersection', alarmDistance=5, contactDistance=1)
 
     # Inverse solver
     # node.addObject("LCPConstraintSolver", maxIt=1000, tolerance=0.001)
-    node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=1e-2, epsilon=1e-2, printLog=False)
+    if not generic_solver:
+        node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=1e-2, epsilon=1e-2, printLog=False)
 
     if ground:
         addGround(node, path)
@@ -73,9 +76,9 @@ def addGround(node, path) -> None:
     ground.addObject("MeshSTLLoader", name="loader", filename=path + "Ground.stl", rotation=[0, 0, 0], scale=1, translation=[0, 0, 0])
     ground.addObject("MeshTopology", src="@loader")
     ground.addObject("MechanicalObject", src="@loader")
-    ground.addObject("TriangleCollisionModel", moving=0, simulated=0)
-    ground.addObject("LineCollisionModel", moving=0, simulated=0)
-    ground.addObject("PointCollisionModel", moving=0, simulated=0)
+    ground.addObject("TriangleCollisionModel")#, moving=0, simulated=0)
+    ground.addObject("LineCollisionModel")#, moving=0, simulated=0)
+    ground.addObject("PointCollisionModel")#, moving=0, simulated=0)
     ground.addObject("OglModel", name="Visual", src="@loader", color=[0.5, 0.5, 0.5, 1])
 
 def launchGUI(root) -> None:

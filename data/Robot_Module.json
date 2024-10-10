@@ -4,6 +4,6 @@
         "robot": {}
     },
     "listener": [
-        "sofa"
+        "sofa_i"
     ]
 }

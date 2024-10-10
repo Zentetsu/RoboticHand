@@ -11,9 +11,9 @@ if __name__ == "__main__":
     angles = [0] * 7
 
     while robot_Module.getLSAvailability(listener=True)[1][0]:
-        time.sleep(0.1)
-        print(robot_Module["sofa"]["angles"])
-        n_angles = robot_Module["sofa"]["angles"]
+        time.sleep(0.01)
+        print(robot_Module["sofa_i"]["arm_ang"])
+        n_angles = robot_Module["sofa_i"]["arm_ang"]
         angles[0] = -n_angles[0]
         angles[1] = n_angles[1]
         angles[2] = n_angles[2]

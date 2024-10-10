@@ -209,7 +209,7 @@ class ControllerKB:
     def ControllerKB(self, verbose):
         self.verbose = verbose
 
-        self.command = {'w': False, 's': False, 'a': False, 'd': False, 'p': False, 'shift': False, 'alt': False, 'esc': False, 'up': False, 'down': False, 'left': False, 'right': False}
+        self.command = {'1':0, '2':0, '3':0, '4':0, '5':0, '6':0, 'w': False, 's': False, 'a': False, 'd': False, 'p': False, 'shift': False, 'alt': False, 'esc': False, 'up': False, 'down': False, 'left': False, 'right': False, 'up': False, 'down': False, 'cmd': False}
 
     def readInput(self):
         with Listener(on_press=self.on_press, on_release=self.on_release) as listener:
@@ -217,7 +217,6 @@ class ControllerKB:
 
     def on_press(self, key):
         try:
-            print(key)
             if key.char in self.command:
                 self.command[key.char] = True
         except:
@@ -225,6 +224,8 @@ class ControllerKB:
                 self.command['esc'] = True
                 return False
 
+            if key == key.cmd:
+                self.command['cmd'] = True
             if key == key.shift:
                 self.command['shift'] = True
             if key == key.alt:
@@ -237,6 +238,10 @@ class ControllerKB:
                 self.command['left'] = True
             if key == key.right:
                 self.command['right'] = True
+            if key == key.page_up:
+                self.command['up'] = True
+            if key == key.page_down:
+                self.command['down'] = True
 
     def on_release(self, key):
         try:
@@ -244,6 +249,8 @@ class ControllerKB:
                 self.command[key.char] = False
 
         except:
+            if key == key.cmd:
+                self.command['cmd'] = False
             if key == key.shift:
                 self.command['shift'] = False
             if key == key.alt:
@@ -256,6 +263,10 @@ class ControllerKB:
                 self.command['left'] = False
             if key == key.right:
                 self.command['right'] = False
+            if key == key.page_up:
+                self.command['up'] = False
+            if key == key.page_down:
+                self.command['down'] = False
 
     def getInput(self):
         return self.command
@@ -282,11 +293,13 @@ if __name__ == "__main__":
     thread.start()
 
     while not cKB.getInput()["esc"]:
-        time.sleep(0.1)
-        print(Target_Module["target"]["wrist"])
+        time.sleep(0.01)
 
         old = Target_Module["target"]["wrist"]
         old2 = Target_Module["target"]["index"]
+        ang = Target_Module["target"]["angles"]
+
+        # print(old, old2, ang)
 
         if cKB.getInput()["w"]:
             old[0] += 1
@@ -305,12 +318,32 @@ if __name__ == "__main__":
             old2[0] += 0.1
         elif cKB.getInput()["down"]:
             old2[0] -= 0.1
-        elif cKB.getInput()["left"]:
+        if cKB.getInput()["left"]:
             old2[1] -= 0.1
         elif cKB.getInput()["right"]:
             old2[1] += 0.1
+        if cKB.getInput()["up"]:
+            old2[2] -= 0.1
+        elif cKB.getInput()["down"]:
+            old2[2] += 0.1
+
+        if cKB.getInput()['1']:
+            ang[0] = ang[0] + 1 if not cKB.getInput()['cmd'] else ang[0] - 1
+        if cKB.getInput()['2']:
+            ang[1] = ang[1] + 1 if not cKB.getInput()['cmd'] else ang[1] - 1
+        if cKB.getInput()['3']:
+            ang[2] = ang[2] + 1 if not cKB.getInput()['cmd'] else ang[2] - 1
+        if cKB.getInput()['4']:
+            ang[3] = ang[3] + 1 if not cKB.getInput()['cmd'] else ang[3] - 1
+        if cKB.getInput()['5']:
+            ang[4] = ang[4] + 1 if not cKB.getInput()['cmd'] else ang[4] - 1
+        if cKB.getInput()['6']:
+            ang[5] = ang[5] + 1 if not cKB.getInput()['cmd'] else ang[5] - 1
+
 
         Target_Module["target"]["wrist"] = old
         Target_Module["target"]["index"] = old2
+        Target_Module["target"]["angles"] = ang
 
-    Target_Module.stopModule()
+    # time.sleep(5)
+    Target_Module.stopModule(name="target")
