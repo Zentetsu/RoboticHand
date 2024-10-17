@@ -7,6 +7,57 @@ import time
 import sys
 import os
 
+class CustomController(Sofa.Core.Controller):
+    def __init__(self, arm: Arm, hand: Hand, generic_solver: False):
+        super().__init__()
+        self.arm = arm
+        self.hand = hand
+        self.generic = generic_solver
+
+        self.SOFA_Module = Module(file=os.environ['PHDPATH']  + "/RoboticHand/data/SOFA_" + ('g' if generic_solver else 'i') + "_Module.json")
+
+    def onAnimateBeginEvent(self, event):
+        on = self.SOFA_Module.getLSAvailability(listener=True)[1][0] if not self.generic else self.SOFA_Module.getLSAvailability(listener=True)[1][0] or self.SOFA_Module.getLSAvailability(listener=True)[1][1]
+
+        if on and not self.generic:
+            if self.arm is not None:
+                target_wrist = self.SOFA_Module["target"]["wrist"]
+                # print(target_wrist)
+                target_forearm = getForearmFromHand(target_wrist, -48)
+                self.arm.updateTargetPosition(0, target_forearm)
+
+                arm_angles = self.arm.getPosition()
+
+                self.SOFA_Module["sofa_i"]["arm_ang"] = arm_angles
+                # print(target_wrist, arm_angles)
+            if self.hand is not None:
+                # target_thumb = self.SOFA_Module["target"]["thumb"]
+                # g_target_th_qu = coEulerToQuat(target_wrist, target_thumb)
+                # # print(g_target_th_qu)
+                # self.hand.updateTargetPosition(0, g_target_th_qu)
+
+                target_index = self.SOFA_Module["target"]["index"]
+                # print(target_index)
+                g_target_in_qu = coEulerToQuat(target_wrist, target_index)
+                self.hand.updateTargetPosition(1, g_target_in_qu)
+
+                hand_angles = self.hand.getPosition()
+                self.SOFA_Module["sofa_i"]["hand_ang"] = hand_angles
+                # print("ee", hand_angles)
+        elif on:
+            if self.arm is not None:
+                if self.SOFA_Module.getLSAvailability(listener=True)[1][0]:
+                    target_arm_angles = self.SOFA_Module["sofa_i"]["arm_ang"]
+                else:
+                    target_arm_angles = self.SOFA_Module["target"]["angles"]
+                # print("g", target_arm_angles, self.SOFA_Module.getLSAvailability(listener=True)[1][0])
+                self.arm.updateAngle(target_arm_angles)
+
+            if self.hand is not None and self.SOFA_Module.getLSAvailability(listener=True)[1][0]:
+                target_hand_angles = self.SOFA_Module["sofa_i"]["hand_ang"]
+                self.hand.updateAngle(target_hand_angles)
+
+
 
 def checkSharedMemory(arm: Arm, hand: Hand, generic_solver: False) -> None:
     SOFA_Module = Module(file=os.environ['PHDPATH']  + "/RoboticHand/data/SOFA_" + ('g' if generic_solver else 'i') + "_Module.json")
@@ -169,7 +220,7 @@ def createArm750(node, path, target_wrist,generic_solver):
         (2, "Joint_2", "R2", [0,     57,  303], [0, 0, 90], False),
         (3, "Joint_3", "R3", [0,  82.53,    0], [0, 0, 90], False),
         (4, "Joint_4", "R4", [0, 245.38,    0], [0, 0, 90], False),
-        (5, "Joint_5", "R5", [0,     79,    0], [0, 0, 90], True),
+        (5, "Joint_5", "R5", [0,     79,    0], [0, 0, 90], False),
     ]
 
     joint_actuator = [
@@ -223,19 +274,37 @@ def createHand(node, path, target_wrist, target_hand, generic_solver, arm):
             [0, 0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1],
     ]
 
     init_angles = [
             math.radians(0), # Wrist link
             math.radians(0), # Meta 2
-            math.radians(0), # Meta 1
-            math.radians(0), # Thumb 1
-            math.radians(0), # Thumb 2
+            math.radians(0.14), # Meta 1 1
+            math.radians(-3.45), # Meta 1 2
+            math.radians(0), # Meta 1 3
+
+            math.radians(-1.1), # Thumb 1 1
+            math.radians(-4.775), # Thumb 1 2
+            math.radians(0), # Thumb 1 3
+            math.radians(0), # Thumb 2 1
+            math.radians(-10), # Thumb 2 2
+            math.radians(10), # Thumb 2 3
             math.radians(0), # Thumb 3
             math.radians(0), # Thumb 4
             math.radians(0), # Thumb 5
             math.radians(0), # Thumb 6 fake
-            math.radians(0), # Index 1
+
+            math.radians(-0.165), # Index 1 1
+            math.radians(-2.44), # Index 1 2
+            math.radians(0), # Index 1 3
             math.radians(0), # index 2
             math.radians(0), # index 3
             math.radians(0), # index 4
@@ -244,64 +313,86 @@ def createHand(node, path, target_wrist, target_hand, generic_solver, arm):
 
     visu_info = [
         # Wrist
-        (0,      "Wrist",      "wrist", [0, 0, 48], [0, 0, 0], False),
-        (1, "Wrist_Link", "wrist_link", [0, 0,  0], [0, 0, 0], False),
-        (2,     "Meta_2", "metacarp_2", [0, 0,  0], [0, 0, 0], False),
-        (3,     "Meta_1", "metacarp_1", [0, 0,  0], [0, 0, 0], False),
+        (0,       "Wrist",      "wrist", [0, 0, 48], [0, 0, 0], False),
+        (1,  "Wrist_Link", "wrist_link", [0, 0,  0], [0, 0, 0], False),
+        (2,      "Meta_2", "metacarp_2", [0, 0,  0], [0, 0, 0], False),
+        (3,    "Meta_1_1",         None, [0, 0,  0], [0, 0, 0], False),
+        (4,    "Meta_1_2",         None, [0, 0,  0], [0, 0, 0], False),
+        (5,    "Meta_1_3", "metacarp_1", [0, 0,  0], [0, 0, 0], False),
 
         # Thumb
-        (4,   "Thumb_p1",   "thumb_p1", [0, 0,  0], [0, 0, 0], False),
-        (5,   "Thumb_p2",   "thumb_p2", [0, 0,  0], [0, 0, 0], False),
-        (6,   "Thumb_p3",   "thumb_p3", [0, 0,  0], [0, 0, 0], False),
-        (7,   "Thumb_p4",   "thumb_p4", [0, 0,  0], [0, 0, 0], False),
-        (8,   "Thumb_p5",   "thumb_p5", [0, 0,  0], [0, 0, 0], False),
+        (6,  "Thumb_p1_1",         None, [0, 0,  0], [0, 0, 0], False),
+        (7,  "Thumb_p1_2",         None, [0, 0,  0], [0, 0, 0], False),
+        (8,  "Thumb_p1_3",   "thumb_p1", [0, 0,  0], [0, 0, 0], False),
+        (9,  "Thumb_p2_1",         None, [0, 0,  0], [0, 0, 0], False),
+        (10, "Thumb_p2_2",         None, [0, 0,  0], [0, 0, 0], False),
+        (11, "Thumb_p2_3",   "thumb_p2", [0, 0,  0], [0, 0, 0], False),
+        (12,   "Thumb_p3",   "thumb_p3", [0, 0,  0], [0, 0, 0], False),
+        (13,   "Thumb_p4",   "thumb_p4", [0, 0,  0], [0, 0, 0], False),
+        (14,   "Thumb_p5",   "thumb_p5", [0, 0,  0], [0, 0, 0], False),
 
         # Index
-        (10,  "Index_p1",   "index_p1", [0, 0,  0], [0, 0, 0], False),
-        (11,  "Index_p2",   "index_p2", [0, 0,  0], [0, 0, 0], False),
-        (12,  "Index_p3",   "index_p3", [0, 0,  0], [0, 0, 0], False),
-        (13,  "Index_p4",   "index_p4", [0, 0,  0], [0, 0, 0], True),
+        (16,  "Index_p1_1",         None, [0, 0,  0], [0, 0, 0], False),
+        (17,  "Index_p1_2",         None, [0, 0,  0], [0, 0, 0], False),
+        (18,  "Index_p1_3",   "index_p1", [0, 0,  0], [0, 0, 0], False),
+        (19,    "Index_p2",   "index_p2", [0, 0,  0], [0, 0, 0], False),
+        (20,    "Index_p3",   "index_p3", [0, 0,  0], [0, 0, 0], False),
+        (21,    "Index_p4",   "index_p4", [0, 0,  0], [0, 0, 0], True),
     ]
 
     joint_actuator = [
         # Wrist
         (0, math.radians(-10), math.radians(10)),
-        (1, math.radians(-90), math.radians(90)),
-        # (2, math.radians(-90),  math.radians(90)),
+        (1, math.radians(-75), math.radians(75)),
+        (2, math.radians(0), math.radians(0)),
+        (3, math.radians(-3.45), math.radians(-3.45)),
+        (4, math.radians(-5), math.radians(5)),
 
         # Thumb
-        (3, math.radians(-180), math.radians(180)),
-        # (4, math.radians(-180), math.radians(100)), # Thumb 1
-        (5, math.radians(-180), math.radians(10)), # Thumb 2
-        (6, math.radians(-180), math.radians(180)), # Thumb 3
-        (7, math.radians(-180), math.radians(180)), # Thumb 4
-        (8, math.radians(-180), math.radians(180)), # Thumb 5
+        (5, math.radians(0), math.radians(0)), # thumb 1
+        (6, math.radians(-4.7746), math.radians(-4.7746)),
+        (7, math.radians(-30), math.radians(10)),
+        (8, math.radians(0), math.radians(10)), # thumb 2
+        (9, math.radians(-10), math.radians(-10)),
+        (10, math.radians(10), math.radians(50)),
+        (11, math.radians(-40), math.radians(15)), # Thumb 3
+        (12, math.radians(0), math.radians(90)), # Thumb 4
+        (13, math.radians(-50), math.radians(70)), # Thumb 5
 
         # Index
-        (9,  math.radians(-10), math.radians(10)),
-        (10, math.radians(-90), math.radians(10)),
-        (11, math.radians(-90), math.radians(0)),
-        (12, math.radians(-90), math.radians(0)),
-        (13, math.radians(-90), math.radians(0)),
+        (15,  math.radians(0), math.radians(0)), # index 1
+        (16,  math.radians(-2.44), math.radians(-2.44)),
+        (17,  math.radians(-15), math.radians(15)),
+        (18, math.radians(-90), math.radians(10)), # index 2
+        (19, math.radians(-120), math.radians(0)), # index 3
+        (20, math.radians(-45), math.radians(0)), # index 4
     ]
 
     articulation_info = [
-        ("Wrist",      0, 1,  [        0,         0,       48], [0, 0, 0], 1, [    0,      1,     0], 0),
-        ("Meta2_c",    1, 2,  [      1.1,     -0.25,  32.6447], [0, 0, 0], 1, [    1,      0,     0], 1),
-        ("Meta1_c",    2, 3,  [  -9.6137,  -1.65902,  48.9203], [0, 0, 0], 1, [-0.04, -0.005, 0.955], 2),
+        ("Wrist",       0, 1,    [        0,         0,       48], [0, 0, 0], 1, [    0,      1,     0], 0),
+        ("Meta2_c",     1, 2,    [      1.1,     -0.25,  32.6447], [0, 0, 0], 1, [    1,      0,     0], 1),
+        ("Meta1_c_1",   2, 3,    [  -9.6137,  -1.65902,  48.9203], [0, 0, 0], 1, [    1,      0,     0], 2),
+        ("Meta1_c_2",   3, 4,    [        0,         0,        0], [0, 0, 0], 1, [    0,      1,     0], 3),
+        ("Meta1_c_3",   4, 5,    [        0,         0,        0], [0, 0, 0], 1, [    0,      0,     1], 4),
 
-        ("Thumbp1_c",  3, 4,  [ -10.4018,    4.8352, -47.8296], [0, 0, 0], 1, [  0.8,   0.04,  0.16], 3),
-        ("Thumbp2_c",  4, 5,  [ -13.0416,   4.00953, 0.621956], [0, 0, 0], 1, [-0.17,    0.0,  0.83], 4),
-        ("Thumbp3_c",  5, 6,  [ -7.40277,  -0.05484,   19.341], [0, 0, 0], 1, [ 0.04,   0.95,  0.01], 5),
-        ("Thumbp4_c",  6, 7,  [ -9.05358, -0.346076,  38.9789], [0, 0, 0], 1, [ 0.04,   0.95,  0.01], 6),
-        ("Thumbp5_c",  7, 8,  [ -7.28673, -0.358486,  35.7636], [0, 0, 0], 1, [ 0.04,   0.95,  0.01], 7),
-        ("Thumbp6_c",  8, 9,  [-0.087104, -0.622104,   34.546], [0, 0, 0], 0, [    0,      0,     0], 8),
+        ("Thumbp1_c_1",  5, 6,   [ -12.2179,       5.2, -47.3596], [0, 0, 0], 1, [    0,      1,     0], 5),
+        ("Thumbp1_c_2",  6, 7,   [        0,         0,        0], [0, 0, 0], 1, [    0,      0,     1], 6),
+        ("Thumbp1_c_3",  7, 8,   [        0,         0,        0], [0, 0, 0], 1, [    1,      0,     0], 7),
+        ("Thumbp2_c_1",  8, 9,   [ -13.1755 ,  3.49373,  0.86368], [0, 0, 0], 1, [    1,      0,     0], 8),
+        ("Thumbp2_c_2",  9, 10,  [        0,         0,        0], [0, 0, 0], 1, [    0,      1,     0], 9),
+        ("Thumbp2_c_3",  10, 11, [        0,         0,        0], [0, 0, 0], 1, [    0,      0,     1], 10),
+        ("Thumbp3_c",    11, 12, [  -3.4515,         0,  20.4197], [0, 0, 0], 1, [    0,      1,     0], 11),
+        ("Thumbp4_c",    12, 13, [     -1.2,         0,       40], [0, 0, 0], 1, [    0,      1,     0], 12),
+        ("Thumbp5_c",    13, 14, [     -7.2,         0,       36], [0, 0, 0], 1, [    0,      1,     0], 13),
+        ("Thumbp6_c",    14, 15, [  5.70894,  0.003393,  33.9805], [0, 0, 0], 0, [    0,      0,     0], 14),
 
-        ("Indexp1_c",  3, 10, [ -15.0262,  -2.13672,  29.5661], [0, 0, 0], 1, [-0.05,   0.95,     0], 9),
-        ("Indexp2_c", 10, 11, [-0.027241,  -1.60289,       14], [0, 0, 0], 1, [ 0.95,   0.05,     0], 10),
-        ("Indexp3_c", 11, 12, [-0.090864,   1.99792,       48], [0, 0, 0], 1, [ 0.95,   0.05,     0], 11),
-        ("Indexp4_c", 12, 13, [-0.040892,   0.89907,  27.9039], [0, 0, 0], 1, [ 0.95,   0.05,     0], 12),
-        ("Indexp5_c", 13, 14, [ 0.004486,  0.911137,  22.2986], [0, 0, 0], 0, [    0,      0,     0], 13),
+        ("Indexp1_c_1",   4, 16, [ -13.8285,     -1.45,  30.1857], [0, 0, 0], 1, [    1,      0,     0], 15),
+        ("Indexp1_c_2",  16, 17, [        0,         0,        0], [0, 0, 0], 1, [    0,      0,     1], 16),
+        ("Indexp1_c_3",  17, 18, [        0,         0,        0], [0, 0, 0], 1, [    0,      1,     0], 17),
+        ("Indexp2_c",    18, 19, [-0.099998,      -1.6,       14], [0, 0, 0], 1, [    1,      0,     0], 18),
+        ("Indexp3_c",    19, 20, [        0,   1.99797,       48], [0, 0, 0], 1, [    1,      0,     0], 19),
+        ("Indexp4_c",    20, 21, [        0,  0.899992,  27.9039], [0, 0, 0], 1, [    1,      0,     0], 20),
+        ("Indexp5_c",    21, 22, [-0.036879, -0.910405,  22.2986], [0, 0, 0], 0, [    0,      0,     0], 21),
 
     ]
 
@@ -310,7 +401,7 @@ def createHand(node, path, target_wrist, target_hand, generic_solver, arm):
     hand.createArticulation(joint_limit=not generic_solver)
     hand.createRigid()
     hand.createVisualization()
-    hand.createArticulationCenter()
+    hand.createArticulationCenter(indice=[15, 22])
 
     if arm:
         hand.attachToRobot()
@@ -371,8 +462,11 @@ def createScene(root) -> None:
         ], _generic_solver, _arm750)
 
     if _shared_mem:
-        thread = threading.Thread(target=checkSharedMemory, args=(arm, hand, _generic_solver))
-        thread.start()
+        # thread = threading.Thread(target=checkSharedMemory, args=(arm, hand, _generic_solver))
+        # thread.start()
+
+        controller = CustomController(arm, hand, _generic_solver)
+        root.addObject(controller)
 
 if __name__ == "__main__":
     root = Sofa.Core.Node("root")

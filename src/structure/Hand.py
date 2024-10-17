@@ -17,7 +17,7 @@ class Hand(ComplexStructure):
 
         self.ext = ".stl"
 
-    def createArticulationCenter(self) -> None:
+    def createArticulationCenter(self, indice: list) -> None:
         print("Create " + self.name + " articulation center...")
 
         self.centers = self.articulation.addChild("ArticulationCenters")
@@ -36,10 +36,10 @@ class Hand(ComplexStructure):
                 articullation[6],
                 articullation[7])
 
-        self.indice = [9, 14]
+        self.indice = indice
 
     def getPosition(self):
-        # rotation_quat = R.from_euler('xyz', [math.radians(0), math.radians(0), math.radians(0)]).as_quat()
+        rotation_quat = R.from_euler('xyz', [math.radians(0), math.radians(90), math.radians(90)]).as_quat()
         angles = [0] * len(self.mo.position.value)
         d_angle = np.array([0, 0, 0])
         angles_ = []
@@ -47,9 +47,9 @@ class Hand(ComplexStructure):
         # print(self.mo.position.value)
         for i in range(1, len(angles)):
             quaternion = np.array(self.mo.position.value[i][3:])
-            # rotated_quat = R.from_quat(rotation_quat).inv() * R.from_quat(quaternion)
+            rotated_quat = R.from_quat(rotation_quat).inv() * R.from_quat(quaternion)
 
-            rotated_quat = R.from_quat(quaternion)
+            # rotated_quat = R.from_quat(quaternion)
             angles[i] = list(rotated_quat.as_euler('xyz', degrees=True) - d_angle)
             d_angle = d_angle + np.array(angles[i])
 

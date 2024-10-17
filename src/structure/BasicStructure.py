@@ -110,7 +110,8 @@ class BasicStructure():
             trans = [0, 0, 0] if not self.deformable and not complx else info[3]
             rota = [0, 0, 0] if not self.deformable and not complx else info[4]
             defo = True if self.deformable and not complx else False
-            BasicStructure.addPart(self.visu, info[1], info[0], self.path + info[2] + self.ext, self.positions[i], trans, rota, rigid=self.rigid is not None, collision=info[5], complx=complx, deformable=defo)
+            path = None if info[2] is None else self.path + info[2] + self.ext
+            BasicStructure.addPart(self.visu, info[1], info[0], path, self.positions[i], trans, rota, rigid=self.rigid is not None, collision=info[5], complx=complx, deformable=defo)
 
     @staticmethod
     def addPart(node, name, index, filename, position, translation=[0, 0, 0], rotation=[0, 0, 0], color=[0, 0, 1, 1], rigid=False, collision=False, complx=False, deformable=False) -> None:

@@ -37,7 +37,7 @@ class ComplexStructure(BasicStructure):
             for joint in self.joint_actuator:
                 self.articulation.addObject("JointActuator", name="joint_" + str(joint[0]), index=joint[0], maxAngleVariation=0.001, minAngle=joint[1], maxAngle=joint[2])
 
-        self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e5, points=[i for i in range(0, len(self.init_angles))]) #TODO: Check for inverse solver
+        self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e3, points=[i for i in range(0, len(self.init_angles))]) #TODO: Check for inverse solver
 
     def createRigid(self) -> None:
         print("Create " + self.name + " rigid...")
@@ -71,7 +71,7 @@ class ComplexStructure(BasicStructure):
             self.target[i].addObject("EulerImplicitSolver", firstOrder=True)
             self.target[i].addObject("CGLinearSolver", iterations=100, threshold=1e-2, tolerance=1e-5)
             self.target[i].addObject("MechanicalObject", name="dofs", template="Rigid3", position=target, showObject=1, showObjectScale=10, drawMode=1)
-            self.target[i].addObject("UncoupledConstraintCorrection", defaultCompliance="0.1")
+            self.target[i].addObject("UncoupledConstraintCorrection", name="UCC_t_" + self.name + "_" + str(i), defaultCompliance="0.1")
 
             self.rigid.addObject("PositionEffector", name="pe_" + str(i), template="Rigid3", indices=self.indice[i], effectorGoal=self.target[i].dofs.findData('position').getLinkPath(), useDirections=[1, 1, 1, 1, 1, 1])
 
