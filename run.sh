@@ -46,7 +46,7 @@ if [[ $SendPos -eq 1 ]]; then
 fi
 
 if [[ $Inverse -eq 1 ]]; then
-	python "runSofaScript.py" -c --hand --arm750 --sm &
+	python "runSofaScript.py" --hand --arm750 --sm &
 fi
 
 if [[ $Generic -eq 1 ]]; then

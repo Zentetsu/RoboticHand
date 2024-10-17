@@ -1,10 +1,10 @@
-import SofaRuntime
-import Sofa.Gui
-import Sofa
-
-from scipy.spatial.transform import Rotation as R
-import numpy as np
 import math
+
+import numpy as np
+import Sofa  # type: ignore
+import Sofa.Gui  # type: ignore
+import SofaRuntime  # type: ignore
+from scipy.spatial.transform import Rotation as R
 
 USE_GUI = False
 
@@ -23,6 +23,7 @@ def addPlugins(node) -> None:
         "Sofa.Component.Topology.Container.Constant",
         "Sofa.Component.LinearSolver.Iterative",
         "Sofa.Component.LinearSolver.Direct",
+        "Sofa.Component.SolidMechanics.FEM.Elastic",
         "Sofa.Component.SolidMechanics.Spring",
         "Sofa.Component.ODESolver.Backward",
         "Sofa.Component.Mapping.NonLinear",
@@ -55,15 +56,15 @@ def initScene(node, path, ground=False, generic_solver=0) -> None:
     node.addObject("CollisionPipeline")
     node.addObject("ParallelBruteForceBroadPhase")
     node.addObject("ParallelBVHNarrowPhase")
-    node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=1")
+    node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=0.6", listening=True)
     node.addObject("LocalMinDistance", name="Proximity", alarmDistance=5, contactDistance=1)
     # node.addObject('NewProximityIntersection', alarmDistance=5, contactDistance=1)
-    # node.addObject('MinProximityIntersection', alarmDistance=5, contactDistance=1)
+    # node.addObject('MinProximityIntersection', alarmDistance=10, contactDistance=5)
 
     # Inverse solver
     # node.addObject("LCPConstraintSolver", maxIt=1000, tolerance=0.001)
     if not generic_solver:
-        node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=1e-2, epsilon=1e-2, printLog=False)
+        node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=1e-2, epsilon=1e-4, printLog=False)
 
     if ground:
         addGround(node, path)
@@ -76,9 +77,9 @@ def addGround(node, path) -> None:
     ground.addObject("MeshSTLLoader", name="loader", filename=path + "Ground.stl", rotation=[0, 0, 0], scale=1, translation=[0, 0, 0])
     ground.addObject("MeshTopology", src="@loader")
     ground.addObject("MechanicalObject", src="@loader")
-    ground.addObject("TriangleCollisionModel")#, moving=0, simulated=0)
-    ground.addObject("LineCollisionModel")#, moving=0, simulated=0)
-    ground.addObject("PointCollisionModel")#, moving=0, simulated=0)
+    ground.addObject("TriangleCollisionModel", moving=0, simulated=0)
+    ground.addObject("LineCollisionModel", moving=0, simulated=0)
+    ground.addObject("PointCollisionModel", moving=0, simulated=0)
     ground.addObject("OglModel", name="Visual", src="@loader", color=[0.5, 0.5, 0.5, 1])
 
 def launchGUI(root) -> None:

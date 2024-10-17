@@ -45,7 +45,7 @@ def checkSharedMemory(arm: Arm, hand: Hand, generic_solver: False) -> None:
                         target_arm_angles = SOFA_Module["sofa_i"]["arm_ang"]
                     else:
                         target_arm_angles = SOFA_Module["target"]["angles"]
-                    # print("g", target_arm_angles)
+                    # print("g", target_arm_angles, SOFA_Module.getLSAvailability(listener=True)[1][0])
                     arm.updateAngle(target_arm_angles)
 
                 if hand is not None and SOFA_Module.getLSAvailability(listener=True)[1][0]:
@@ -56,15 +56,15 @@ def checkSharedMemory(arm: Arm, hand: Hand, generic_solver: False) -> None:
 
     SOFA_Module.stopModule()
 
-def createCube(node, path, position) -> None:
+def createObj(node, path, name, position) -> None:
     cube = BasicStructure(
         node,
         path + "Others/",
-        "Cube",
+        name,
         positions=[position],
-        visu_info=[(0, "Cube", "Cube", [0, 0, 0], [0, 0, 0], True)]
+        visu_info=[(0, name, name, position[:3], position[3:-1], True)]
     )
-    cube.createStructure(solver="CGLinearSolver", collision=True, constraint=True, type_c=1)
+    cube.createStructure(solver="CGLinearSolver", collision=True, constraint=True, type_c=1, deformable=False)
     cube.createVisualization()
 
 def createArmTurtle(node, path, target_wrist, generic_solver):
@@ -187,7 +187,7 @@ def createArm750(node, path, target_wrist,generic_solver):
         ("R2", 2, 3, [0,     57,  303], [0, 0, 0], 1, [1, 0, 0], 2),
         ("R3", 3, 4, [0,  82.53,    0], [0, 0, 0], 1, [0, 1, 0], 3),
         ("R4", 4, 5, [0, 245.38,    0], [0, 0, 0], 1, [1, 0, 0], 4),
-        ("R5", 5, 6, [0,     79,    0], [0, 0, 0], 1, [0, 0, 1], 5),
+        ("R5", 5, 6, [0,     79,    0], [0, 0, 0], 1, [0, 1, 0], 5),
     ]
 
     arm = Arm(node, path + "myArm750/", "Arm", positions=positions, init_angles=init_angles, visu_info=visu_info, joint_actuator=joint_actuator, articulation_info=articulation_info)
@@ -328,6 +328,7 @@ def createScene(root) -> None:
 
     _generic_solver = True if "generic" in sys.argv else False
     _cube = True if "cube" in sys.argv else False
+    _sphere = True if "sphere" in sys.argv else False
     _arm750 = True if "arm750" in sys.argv else False
     _hand = True if "hand" in sys.argv else False
     _shared_mem = True if "sm" in sys.argv else False
@@ -340,8 +341,12 @@ def createScene(root) -> None:
 
     # # cube_pos = [0, 57+327.91+79-15, 173.9+303+50, 0, 0, 0, 1] #top of the arm
     if _cube:
-        cube_pos =[-125, 350, 50, 0, 0, 0, 1] # on the floor
-        createCube(sim, path, cube_pos)
+        cube_pos =[-125, 350, 27, 0, 0, 0, 1] # on the floor
+        createObj(sim, path, "Cube", cube_pos)
+
+    if _sphere:
+        sphere_pos =[-125, 350, 50, 0, 0, 0, 1] # on the floor
+        createObj(sim, path, "Sphere", sphere_pos)
 
     target_wrist = [0, 57+327.91+79+48, 173.9+303, 0, 0, 0] #Origin pos for top cube
     if _arm750:

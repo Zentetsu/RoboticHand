@@ -209,7 +209,7 @@ class ControllerKB:
     def ControllerKB(self, verbose):
         self.verbose = verbose
 
-        self.command = {'1':0, '2':0, '3':0, '4':0, '5':0, '6':0, 'w': False, 's': False, 'a': False, 'd': False, 'p': False, 'shift': False, 'alt': False, 'esc': False, 'up': False, 'down': False, 'left': False, 'right': False, 'up': False, 'down': False, 'cmd': False}
+        self.command = {'1':0, '2':0, '3':0, '4':0, '5':0, '6':0, 'w': False, 's': False, 'a': False, 'd': False, 'p': False, 'shift': False, 'alt': False, 'esc': False, 'up': False, 'down': False, 'left': False, 'right': False, 'pup': False, 'pdown': False, 'cmd': False}
 
     def readInput(self):
         with Listener(on_press=self.on_press, on_release=self.on_release) as listener:
@@ -239,9 +239,9 @@ class ControllerKB:
             if key == key.right:
                 self.command['right'] = True
             if key == key.page_up:
-                self.command['up'] = True
+                self.command['pup'] = True
             if key == key.page_down:
-                self.command['down'] = True
+                self.command['pdown'] = True
 
     def on_release(self, key):
         try:
@@ -264,9 +264,9 @@ class ControllerKB:
             if key == key.right:
                 self.command['right'] = False
             if key == key.page_up:
-                self.command['up'] = False
+                self.command['pup'] = False
             if key == key.page_down:
-                self.command['down'] = False
+                self.command['pdown'] = False
 
     def getInput(self):
         return self.command
@@ -322,23 +322,24 @@ if __name__ == "__main__":
             old2[1] -= 0.1
         elif cKB.getInput()["right"]:
             old2[1] += 0.1
-        if cKB.getInput()["up"]:
+        if cKB.getInput()["pup"]:
             old2[2] -= 0.1
-        elif cKB.getInput()["down"]:
+        elif cKB.getInput()["pdown"]:
             old2[2] += 0.1
 
+        val = 1 if not cKB.getInput()["shift"] else 0.1
         if cKB.getInput()['1']:
-            ang[0] = ang[0] + 1 if not cKB.getInput()['cmd'] else ang[0] - 1
+            ang[0] = ang[0] + val if not cKB.getInput()['cmd'] else ang[0] - val
         if cKB.getInput()['2']:
-            ang[1] = ang[1] + 1 if not cKB.getInput()['cmd'] else ang[1] - 1
+            ang[1] = ang[1] + val if not cKB.getInput()['cmd'] else ang[1] - val
         if cKB.getInput()['3']:
-            ang[2] = ang[2] + 1 if not cKB.getInput()['cmd'] else ang[2] - 1
+            ang[2] = ang[2] + val if not cKB.getInput()['cmd'] else ang[2] - val
         if cKB.getInput()['4']:
-            ang[3] = ang[3] + 1 if not cKB.getInput()['cmd'] else ang[3] - 1
+            ang[3] = ang[3] + val if not cKB.getInput()['cmd'] else ang[3] - val
         if cKB.getInput()['5']:
-            ang[4] = ang[4] + 1 if not cKB.getInput()['cmd'] else ang[4] - 1
+            ang[4] = ang[4] + val if not cKB.getInput()['cmd'] else ang[4] - val
         if cKB.getInput()['6']:
-            ang[5] = ang[5] + 1 if not cKB.getInput()['cmd'] else ang[5] - 1
+            ang[5] = ang[5] + val if not cKB.getInput()['cmd'] else ang[5] - val
 
 
         Target_Module["target"]["wrist"] = old

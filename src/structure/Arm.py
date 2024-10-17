@@ -1,5 +1,5 @@
-import SofaRuntime
-import Sofa
+import SofaRuntime # type: ignore
+import Sofa # type: ignore
 
 from scipy.spatial.transform import Rotation as R
 from structure import ComplexStructure

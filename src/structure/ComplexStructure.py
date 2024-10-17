@@ -1,5 +1,5 @@
-import SofaRuntime
-import Sofa
+import SofaRuntime # type: ignore
+import Sofa # type: ignore
 
 from scipy.spatial.transform import Rotation as R
 import numpy as np
@@ -31,13 +31,13 @@ class ComplexStructure(BasicStructure):
 
         self.articulation.addObject("MechanicalObject", name="dofs", template="Vec1", rest_position=self.structure.getData("angles").getLinkPath(), position=self.init_angles)
         self.articulation.addObject("ArticulatedHierarchyContainer")
-        self.articulation.addObject("UniformMass", totalMass=4.5)
+        self.articulation.addObject("UniformMass", totalMass=45) #TODO: Check with obj weight
 
         if joint_limit:
             for joint in self.joint_actuator:
                 self.articulation.addObject("JointActuator", name="joint_" + str(joint[0]), index=joint[0], maxAngleVariation=0.001, minAngle=joint[1], maxAngle=joint[2])
 
-        self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e3, points=[i for i in range(0, len(self.init_angles))])
+        self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e5, points=[i for i in range(0, len(self.init_angles))]) #TODO: Check for inverse solver
 
     def createRigid(self) -> None:
         print("Create " + self.name + " rigid...")
