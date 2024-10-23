@@ -1,3 +1,5 @@
+import os
+
 def addPlugins(node) -> None:
     print("Add plugins...")
 
@@ -31,8 +33,9 @@ def addPlugins(node) -> None:
     ])
 
 def addGround(rootNode):
+    path = os.environ['PHDPATH'] + "/RoboticHand/model/"
     ground = rootNode.addChild('ground')
-    ground.addObject("MeshSTLLoader", name="loader", filename="Ground.stl", rotation=[0, 0, 0], scale=1, translation=[0, 0, 0])
+    ground.addObject("MeshSTLLoader", name="loader", filename=path + "Others/Ground.stl", rotation=[0, 0, 0], scale=1, translation=[0, 0, 0])
     ground.addObject("MeshTopology", src="@loader")
     ground.addObject("MechanicalObject", src="@loader")
     ground.addObject("TriangleCollisionModel") #, moving=0, simulated=0)
@@ -41,6 +44,7 @@ def addGround(rootNode):
     ground.addObject("OglModel", name="Visual", src="@loader", color=[0.5, 0.5, 0.5, 1])
 
 def createScene(rootNode):
+    path = os.environ['PHDPATH'] + "/RoboticHand/model/"
     addPlugins(rootNode)
 
     rootNode.addObject("FreeMotionAnimationLoop")
@@ -67,14 +71,14 @@ def createScene(rootNode):
     structure.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d")
 
 
-    structure.addObject('MeshGmshLoader', name="cube_def", filename="Cube.msh", translation=tran, rotation=rota, scale=1)
+    structure.addObject('MeshGmshLoader', name="cube_def", filename=path + "Others/Cube.msh", translation=tran, rotation=rota, scale=1)
     structure.addObject("MeshTopology", src="@cube_def")
     structure.addObject("MechanicalObject", template="Vec3")
     structure.addObject('ParallelTetrahedronFEMForceField', poissonRatio=0.1, youngModulus=50)
     # structure.addObject('LinearSolverConstraintCorrection')
     structure.addObject("UniformMass", totalMass=0.005)
     structure.addObject("UncoupledConstraintCorrection")
-    structure.addObject("MeshSTLLoader", name="cube", filename="Cube.stl", scale=1)
+    structure.addObject("MeshSTLLoader", name="cube", filename=path + "Others/Cube.stl", scale=1)
 
 
     visu = structure.addChild('visu')

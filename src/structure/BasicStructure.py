@@ -1,5 +1,5 @@
-import SofaRuntime
-import Sofa
+import SofaRuntime # type: ignore
+import Sofa # type: ignore
 
 import numpy as np
 import math
@@ -59,16 +59,16 @@ class BasicStructure():
             self.structure.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d")
         elif solver == "CGLinearSolver":
             self.structure.addObject("EulerImplicitSolver") #, rayleighStiffness=1e-3, rayleighMass=1e-3)
-            self.structure.addObject("CGLinearSolver", threshold=1e-5, tolerance=1e-5, iterations=50)
+            self.structure.addObject("CGLinearSolver", threshold=1e-5, tolerance=1e-5, iterations=1000)
 
         if "ComplexStructure" not in str(type(self).__base__):
             if self.deformable:
                 self.__createDeformable()
             else:
-                self.structure.addObject("MechanicalObject", name="Rigid_DOF", template="Rigid3", position=self.positions[0])
+                self.mo = self.structure.addObject("MechanicalObject", name="Rigid_DOF", template="Rigid3", position=self.positions[0])
 
             if collision:
-                self.structure.addObject("UniformMass", totalMass=0.00005) # TODO: CHeck with arm weight
+                self.structure.addObject("UniformMass", totalMass=0.001) # TODO: CHeck with arm weight
 
         if constraint:
             self.structure.addObject("UncoupledConstraintCorrection" if type_c else "GenericConstraintCorrection")#, linearSolver="@../Solver")
@@ -77,13 +77,17 @@ class BasicStructure():
         BasicStructure.addMesh(self.structure, self.name + "_def", self.path + self.name + ".msh", translation=self.visu_info[0][3], rotation=self.visu_info[0][4])
         self.structure.addObject("MeshTopology", src="@" + self.name + "_def")
         self.structure.addObject("MechanicalObject", template="Vec3")
-        self.structure.addObject('ParallelTetrahedronFEMForceField', poissonRatio=0.49, youngModulus=10000, method='large')
+        self.structure.addObject('ParallelTetrahedronFEMForceField', poissonRatio=0.49, youngModulus=500, method='large')
         # self.structure.addObject('BoxROI', box=[-75, 300, -25, -175, 400, 75], drawBoxes=True, name='boxROI')
         # self.structure.addObject('RestShapeSpringsForceField', points='@BoxROI.indices', stiffness=1e1)
         # self.structure.addObject('RestShapeSpringsForceField', stiffness=1e0)
         # self.structure.addObject('LinearSolverConstraintCorrection')
         # self.structure.addObject('FixedPlaneProjectiveConstraint', template='Vec3', name='default12', direction=[0, 0, 1], dmin=-5, dmax=5)
         # self.structure.addObject('FixedProjectiveConstraint', template='Vec3', name='default13', indices=[0, 1, 2, 3])
+
+    def updatePosition(self, n_pos):
+        print("Cube", self.mo.position.value, n_pos)
+        self.mo.position = n_pos
 
     def createRigid(self, collision=False) -> None:
         print("Create " + self.name + " rigid...")
@@ -122,13 +126,22 @@ class BasicStructure():
         else:
             part = node
 
-        BasicStructure.addMesh(part, name, filename)
+        if filename is not None:
+            BasicStructure.addMesh(part, name, filename)
 
         if complx:
-            part.addObject("MechanicalObject", template="Rigid3", position=position)
-            part.addObject("RigidMapping", index=index, globalToLocalCoords=False)
+            if deformable:
+                print("defo")
+                BasicStructure.addMesh(part, name + "_def", filename[:-3] + "msh", translation=translation, rotation=translation)
+                part.addObject("MeshTopology", src="@" + name + "_def")
+                part.addObject("MechanicalObject", template="Vec3")
+                part.addObject('ParallelTetrahedronFEMForceField', poissonRatio=0.49, youngModulus=100, method='large')
+            else:
+                part.addObject("MechanicalObject", template="Rigid3", position=position)
+                part.addObject("RigidMapping", index=index, globalToLocalCoords=False)
 
-        BasicStructure.addVisu(part, name, index, translation, rotation, color, rigid, complx, deformable)
+        if filename is not None:
+            BasicStructure.addVisu(part, name, index, translation, rotation, color, rigid, complx, deformable)
 
         if collision:
             BasicStructure.addCollision(part, name, complx, translation, rotation, deformable)
@@ -147,7 +160,10 @@ class BasicStructure():
             else:
                 visu.addObject("RigidMapping", input="@../Rigid_DOF", output="@VisualModel")
         elif rigid:
-            visu.addObject("RigidMapping", output="@VisualModel")
+            if deformable:
+                visu.addObject('BarycentricMapping')
+            else:
+                visu.addObject("RigidMapping", output="@VisualModel")
 
     @staticmethod
     def addCollision(node, name, complx, translation, rotation, deformable) -> None:
@@ -158,12 +174,17 @@ class BasicStructure():
         collision.addObject("MeshTopology", src="@../" + name)
         collision.addObject("MechanicalObject", name="Collision_RM", translation=translation, rotation=rotation)
 
-        collision.addObject("TriangleCollisionModel")
-        collision.addObject("LineCollisionModel")
-
         if complx:
-            collision.addObject("RigidMapping")
+            collision.addObject("TriangleCollisionModel", contactResponse="StickContactForceField")
+            collision.addObject("LineCollisionModel", contactResponse="StickContactForceField")
+            collision.addObject("PointCollisionModel", contactResponse="StickContactForceField")
+            if deformable:
+                collision.addObject('BarycentricMapping')
+            else:
+                collision.addObject("RigidMapping")
         else:
+            collision.addObject("TriangleCollisionModel")
+            collision.addObject("LineCollisionModel")
             collision.addObject("PointCollisionModel")
             if deformable:
                 collision.addObject('BarycentricMapping')

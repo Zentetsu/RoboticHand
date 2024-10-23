@@ -17,7 +17,7 @@ if __name__ == "__main__":
     cmd = ["runSofa", "src/main.py"]
 
     if args.generic:
-        time.sleep(3)
+        # time.sleep(3)
         cmd.extend(["--argv", "generic"])
     if args.cube:
         cmd.extend(["--argv", "cube"])

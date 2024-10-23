@@ -7,11 +7,15 @@ import time
 import sys
 import os
 
+import roboticstoolbox as rtb
+from spatialmath import SO3, SE3
+
 class CustomController(Sofa.Core.Controller):
-    def __init__(self, arm: Arm, hand: Hand, generic_solver: False):
+    def __init__(self, arm: Arm, hand: Hand, cube: BasicStructure, generic_solver: False):
         super().__init__()
         self.arm = arm
         self.hand = hand
+        self.cube = cube
         self.generic = generic_solver
 
         self.SOFA_Module = Module(file=os.environ['PHDPATH']  + "/RoboticHand/data/SOFA_" + ('g' if generic_solver else 'i') + "_Module.json")
@@ -20,44 +24,35 @@ class CustomController(Sofa.Core.Controller):
         on = self.SOFA_Module.getLSAvailability(listener=True)[1][0] if not self.generic else self.SOFA_Module.getLSAvailability(listener=True)[1][0] or self.SOFA_Module.getLSAvailability(listener=True)[1][1]
 
         if on and not self.generic:
+            target_wrist = self.SOFA_Module["target"]["wrist_p"]
             if self.arm is not None:
-                target_wrist = self.SOFA_Module["target"]["wrist"]
+                target_forearm = getForearmFromHand(target_wrist, 0)
                 # print(target_wrist)
-                target_forearm = getForearmFromHand(target_wrist, -48)
                 self.arm.updateTargetPosition(0, target_forearm)
 
                 arm_angles = self.arm.getPosition()
-
                 self.SOFA_Module["sofa_i"]["arm_ang"] = arm_angles
-                # print(target_wrist, arm_angles)
             if self.hand is not None:
-                # target_thumb = self.SOFA_Module["target"]["thumb"]
-                # g_target_th_qu = coEulerToQuat(target_wrist, target_thumb)
-                # # print(g_target_th_qu)
-                # self.hand.updateTargetPosition(0, g_target_th_qu)
+                # TODO: Need to be tested
+                target_thumb = self.SOFA_Module["target"]["thumb_p"]
+                g_target_th_qu = coEulerToQuat(target_wrist, target_thumb)
+                self.hand.updateTargetPosition(0, g_target_th_qu)
 
-                target_index = self.SOFA_Module["target"]["index"]
-                # print(target_index)
+                target_index = self.SOFA_Module["target"]["index_p"]
                 g_target_in_qu = coEulerToQuat(target_wrist, target_index)
                 self.hand.updateTargetPosition(1, g_target_in_qu)
-
-                hand_angles = self.hand.getPosition()
-                self.SOFA_Module["sofa_i"]["hand_ang"] = hand_angles
-                # print("ee", hand_angles)
-        elif on:
+        if on and self.generic:
             if self.arm is not None:
-                if self.SOFA_Module.getLSAvailability(listener=True)[1][0]:
-                    target_arm_angles = self.SOFA_Module["sofa_i"]["arm_ang"]
-                else:
-                    target_arm_angles = self.SOFA_Module["target"]["angles"]
-                # print("g", target_arm_angles, self.SOFA_Module.getLSAvailability(listener=True)[1][0])
-                self.arm.updateAngle(target_arm_angles)
+                target_wrist_angle = np.array(self.SOFA_Module["target"]["wrist_a"])
+                print(target_wrist_angle)
 
-            if self.hand is not None and self.SOFA_Module.getLSAvailability(listener=True)[1][0]:
-                target_hand_angles = self.SOFA_Module["sofa_i"]["hand_ang"]
-                self.hand.updateAngle(target_hand_angles)
+                self.arm.updateAngle(list(target_wrist_angle))
 
+            if self.hand is not None:
+                target_index_angle = np.array(self.SOFA_Module["target"]["index_a"])
+                target_thumb_angle = np.array(self.SOFA_Module["target"]["thumb_a"])
 
+                self.hand.updateAngle(list(target_index_angle), list(target_thumb_angle))
 
 def checkSharedMemory(arm: Arm, hand: Hand, generic_solver: False) -> None:
     SOFA_Module = Module(file=os.environ['PHDPATH']  + "/RoboticHand/data/SOFA_" + ('g' if generic_solver else 'i') + "_Module.json")
@@ -107,7 +102,7 @@ def checkSharedMemory(arm: Arm, hand: Hand, generic_solver: False) -> None:
 
     SOFA_Module.stopModule()
 
-def createObj(node, path, name, position) -> None:
+def createObj(node, path, name, position):
     cube = BasicStructure(
         node,
         path + "Others/",
@@ -117,6 +112,8 @@ def createObj(node, path, name, position) -> None:
     )
     cube.createStructure(solver="CGLinearSolver", collision=True, constraint=True, type_c=1, deformable=False)
     cube.createVisualization()
+
+    return cube
 
 def createArmTurtle(node, path, target_wrist, generic_solver):
     target_forearm = getForearmFromHand(target_wrist, -48)
@@ -220,7 +217,7 @@ def createArm750(node, path, target_wrist,generic_solver):
         (2, "Joint_2", "R2", [0,     57,  303], [0, 0, 90], False),
         (3, "Joint_3", "R3", [0,  82.53,    0], [0, 0, 90], False),
         (4, "Joint_4", "R4", [0, 245.38,    0], [0, 0, 90], False),
-        (5, "Joint_5", "R5", [0,     79,    0], [0, 0, 90], False),
+        (5, "Joint_5", "R5", [0,     79,    0], [0, 0, 90], True),
     ]
 
     joint_actuator = [
@@ -286,28 +283,28 @@ def createHand(node, path, target_wrist, target_hand, generic_solver, arm):
 
     init_angles = [
             math.radians(0), # Wrist link
-            math.radians(0), # Meta 2
-            math.radians(0.14), # Meta 1 1
-            math.radians(-3.45), # Meta 1 2
+            math.radians(45), # Meta 2
+            math.radians(0.14), # Meta 1 1 #FIX#
+            math.radians(-3.45), # Meta 1 2 #FIX#
             math.radians(0), # Meta 1 3
 
-            math.radians(-1.1), # Thumb 1 1
-            math.radians(-4.775), # Thumb 1 2
-            math.radians(0), # Thumb 1 3
-            math.radians(0), # Thumb 2 1
-            math.radians(-10), # Thumb 2 2
-            math.radians(10), # Thumb 2 3
-            math.radians(0), # Thumb 3
-            math.radians(0), # Thumb 4
-            math.radians(0), # Thumb 5
+            math.radians(-1.1), # Thumb 1 1 #FIX#
+            math.radians(-4.775), # Thumb 1 2 #FIX#
+            math.radians(-50), # Thumb 1 3
+            math.radians(0), # Thumb 2 1 #FIX#
+            math.radians(-10), # Thumb 2 2 #FIX#
+            math.radians(-20), # Thumb 2 3
+            math.radians(-30), # Thumb 3
+            math.radians(70), # Thumb 4
+            math.radians(45), # Thumb 5
             math.radians(0), # Thumb 6 fake
 
-            math.radians(-0.165), # Index 1 1
-            math.radians(-2.44), # Index 1 2
+            math.radians(-0.165), # Index 1 1 #FIX#
+            math.radians(-2.44), # Index 1 2 #FIX#
             math.radians(0), # Index 1 3
-            math.radians(0), # index 2
-            math.radians(0), # index 3
-            math.radians(0), # index 4
+            math.radians(10), # index 2
+            math.radians(-90), # index 3
+            math.radians(-30), # index 4
             math.radians(0), # index 5 fake
     ]
 
@@ -329,7 +326,7 @@ def createHand(node, path, target_wrist, target_hand, generic_solver, arm):
         (11, "Thumb_p2_3",   "thumb_p2", [0, 0,  0], [0, 0, 0], False),
         (12,   "Thumb_p3",   "thumb_p3", [0, 0,  0], [0, 0, 0], False),
         (13,   "Thumb_p4",   "thumb_p4", [0, 0,  0], [0, 0, 0], False),
-        (14,   "Thumb_p5",   "thumb_p5", [0, 0,  0], [0, 0, 0], False),
+        (14,   "Thumb_p5",   "thumb_p5", [0, 0,  0], [0, 0, 0], True),
 
         # Index
         (16,  "Index_p1_1",         None, [0, 0,  0], [0, 0, 0], False),
@@ -344,24 +341,24 @@ def createHand(node, path, target_wrist, target_hand, generic_solver, arm):
         # Wrist
         (0, math.radians(-10), math.radians(10)),
         (1, math.radians(-75), math.radians(75)),
-        (2, math.radians(0), math.radians(0)),
-        (3, math.radians(-3.45), math.radians(-3.45)),
-        (4, math.radians(-5), math.radians(5)),
+        # (2, math.radians(0), math.radians(0)),
+        # (3, math.radians(-3.45), math.radians(-3.45)),
+        # (4, math.radians(-5), math.radians(5)),
 
         # Thumb
-        (5, math.radians(0), math.radians(0)), # thumb 1
-        (6, math.radians(-4.7746), math.radians(-4.7746)),
-        (7, math.radians(-30), math.radians(10)),
-        (8, math.radians(0), math.radians(10)), # thumb 2
-        (9, math.radians(-10), math.radians(-10)),
-        (10, math.radians(10), math.radians(50)),
+        # (5, math.radians(0), math.radians(0)), # thumb 1
+        # (6, math.radians(-4.7746), math.radians(-4.7746)),
+        (7, math.radians(-50), math.radians(10)),
+        # (8, math.radians(0), math.radians(10)), # thumb 2
+        # (9, math.radians(-10), math.radians(-10)),
+        (10, math.radians(-50), math.radians(50)),
         (11, math.radians(-40), math.radians(15)), # Thumb 3
         (12, math.radians(0), math.radians(90)), # Thumb 4
         (13, math.radians(-50), math.radians(70)), # Thumb 5
 
         # Index
-        (15,  math.radians(0), math.radians(0)), # index 1
-        (16,  math.radians(-2.44), math.radians(-2.44)),
+        # (15,  math.radians(-0.165), math.radians(0.165)), # index 1
+        # (16,  math.radians(-2.44), math.radians(-2.44)),
         (17,  math.radians(-15), math.radians(15)),
         (18, math.radians(-90), math.radians(10)), # index 2
         (19, math.radians(-120), math.radians(0)), # index 3
@@ -369,30 +366,30 @@ def createHand(node, path, target_wrist, target_hand, generic_solver, arm):
     ]
 
     articulation_info = [
-        ("Wrist",       0, 1,    [        0,         0,       48], [0, 0, 0], 1, [    0,      1,     0], 0),
-        ("Meta2_c",     1, 2,    [      1.1,     -0.25,  32.6447], [0, 0, 0], 1, [    1,      0,     0], 1),
-        ("Meta1_c_1",   2, 3,    [  -9.6137,  -1.65902,  48.9203], [0, 0, 0], 1, [    1,      0,     0], 2),
-        ("Meta1_c_2",   3, 4,    [        0,         0,        0], [0, 0, 0], 1, [    0,      1,     0], 3),
-        ("Meta1_c_3",   4, 5,    [        0,         0,        0], [0, 0, 0], 1, [    0,      0,     1], 4),
+        ("Wrist",       0, 1,    [        0,         0,       48], [0, 0, 0], 1, [0, 1, 0], 0),
+        ("Meta2_c",     1, 2,    [      1.1,     -0.25,  32.6447], [0, 0, 0], 1, [1, 0, 0], 1),
+        ("Meta1_c_1",   2, 3,    [  -9.6137,  -1.65902,  48.9203], [0, 0, 0], 1, [1, 0, 0], 2),
+        ("Meta1_c_2",   3, 4,    [        0,         0,        0], [0, 0, 0], 1, [0, 1, 0], 3),
+        ("Meta1_c_3",   4, 5,    [        0,         0,        0], [0, 0, 0], 1, [0, 0, 1], 4),
 
-        ("Thumbp1_c_1",  5, 6,   [ -12.2179,       5.2, -47.3596], [0, 0, 0], 1, [    0,      1,     0], 5),
-        ("Thumbp1_c_2",  6, 7,   [        0,         0,        0], [0, 0, 0], 1, [    0,      0,     1], 6),
-        ("Thumbp1_c_3",  7, 8,   [        0,         0,        0], [0, 0, 0], 1, [    1,      0,     0], 7),
-        ("Thumbp2_c_1",  8, 9,   [ -13.1755 ,  3.49373,  0.86368], [0, 0, 0], 1, [    1,      0,     0], 8),
-        ("Thumbp2_c_2",  9, 10,  [        0,         0,        0], [0, 0, 0], 1, [    0,      1,     0], 9),
-        ("Thumbp2_c_3",  10, 11, [        0,         0,        0], [0, 0, 0], 1, [    0,      0,     1], 10),
-        ("Thumbp3_c",    11, 12, [  -3.4515,         0,  20.4197], [0, 0, 0], 1, [    0,      1,     0], 11),
-        ("Thumbp4_c",    12, 13, [     -1.2,         0,       40], [0, 0, 0], 1, [    0,      1,     0], 12),
-        ("Thumbp5_c",    13, 14, [     -7.2,         0,       36], [0, 0, 0], 1, [    0,      1,     0], 13),
-        ("Thumbp6_c",    14, 15, [  5.70894,  0.003393,  33.9805], [0, 0, 0], 0, [    0,      0,     0], 14),
+        ("Thumbp1_c_1",  5, 6,   [ -12.2179,       5.2, -47.3596], [0, 0, 0], 1, [0, 1, 0], 5),
+        ("Thumbp1_c_2",  6, 7,   [        0,         0,        0], [0, 0, 0], 1, [0, 0, 1], 6),
+        ("Thumbp1_c_3",  7, 8,   [        0,         0,        0], [0, 0, 0], 1, [1, 0, 0], 7),
+        ("Thumbp2_c_1",  8, 9,   [ -13.1755 ,  3.49373,  0.86368], [0, 0, 0], 1, [1, 0, 0], 8),
+        ("Thumbp2_c_2",  9, 10,  [        0,         0,        0], [0, 0, 0], 1, [0, 1, 0], 9),
+        ("Thumbp2_c_3",  10, 11, [        0,         0,        0], [0, 0, 0], 1, [0, 0, 1], 10),
+        ("Thumbp3_c",    11, 12, [  -3.4515,         0,  20.4197], [0, 0, 0], 1, [0, 1, 0], 11),
+        ("Thumbp4_c",    12, 13, [     -1.2,         0,       40], [0, 0, 0], 1, [0, 1, 0], 12),
+        ("Thumbp5_c",    13, 14, [     -7.2,         0,       36], [0, 0, 0], 1, [0, 1, 0], 13),
+        ("Thumbp6_c",    14, 15, [  5.70894,  0.003393,  33.9805], [0, 0, 0], 0, [0, 0, 0], 14),
 
-        ("Indexp1_c_1",   4, 16, [ -13.8285,     -1.45,  30.1857], [0, 0, 0], 1, [    1,      0,     0], 15),
-        ("Indexp1_c_2",  16, 17, [        0,         0,        0], [0, 0, 0], 1, [    0,      0,     1], 16),
-        ("Indexp1_c_3",  17, 18, [        0,         0,        0], [0, 0, 0], 1, [    0,      1,     0], 17),
-        ("Indexp2_c",    18, 19, [-0.099998,      -1.6,       14], [0, 0, 0], 1, [    1,      0,     0], 18),
-        ("Indexp3_c",    19, 20, [        0,   1.99797,       48], [0, 0, 0], 1, [    1,      0,     0], 19),
-        ("Indexp4_c",    20, 21, [        0,  0.899992,  27.9039], [0, 0, 0], 1, [    1,      0,     0], 20),
-        ("Indexp5_c",    21, 22, [-0.036879, -0.910405,  22.2986], [0, 0, 0], 0, [    0,      0,     0], 21),
+        ("Indexp1_c_1",   4, 16, [ -13.8285,     -1.45,  30.1857], [0, 0, 0], 1, [1, 0, 0], 15),
+        ("Indexp1_c_2",  16, 17, [        0,         0,        0], [0, 0, 0], 1, [0, 0, 1], 16),
+        ("Indexp1_c_3",  17, 18, [        0,         0,        0], [0, 0, 0], 1, [0, 1, 0], 17),
+        ("Indexp2_c",    18, 19, [-0.099998,      -1.6,       14], [0, 0, 0], 1, [1, 0, 0], 18),
+        ("Indexp3_c",    19, 20, [        0,   1.99797,       48], [0, 0, 0], 1, [1, 0, 0], 19),
+        ("Indexp4_c",    20, 21, [        0,  0.899992,  27.9039], [0, 0, 0], 1, [1, 0, 0], 20),
+        ("Indexp5_c",    21, 22, [-0.036879, -0.910405,  22.2986], [0, 0, 0], 0, [0, 0, 0], 21),
 
     ]
 
@@ -428,25 +425,25 @@ def createScene(root) -> None:
     initScene(root, path + "Others/", ground=True, generic_solver=_generic_solver)
 
     sim = root.addChild("Simulation")
-    arm, hand = None, None
+    arm, hand, cube = None, None, None
 
     # # cube_pos = [0, 57+327.91+79-15, 173.9+303+50, 0, 0, 0, 1] #top of the arm
     if _cube:
         cube_pos =[-125, 350, 27, 0, 0, 0, 1] # on the floor
-        createObj(sim, path, "Cube", cube_pos)
+        cube = createObj(sim, path, "Cube", cube_pos)
 
     if _sphere:
         sphere_pos =[-125, 350, 50, 0, 0, 0, 1] # on the floor
         createObj(sim, path, "Sphere", sphere_pos)
 
-    target_wrist = [0, 57+327.91+79+48, 173.9+303, 0, 0, 0] #Origin pos for top cube
+    target_wrist = [0, 57+327.91+79+48, 173.9+303, 0, 0, 0] #Origin pos for top cube #[0, 0, 48, 90, 0, -90] #
     if _arm750:
         arm = createArm750(sim, path, target_wrist, not _generic_solver)
 
     # matrix = matrixOriginToWrist(target_wrist[:3], target_wrist[3:])
     # invert_matrix = invertMatrix(matrix)
 
-    # g_target_th_eu = [-23.694411, -1.840503, 271.3336, 0, 0, 0]
+    # g_target_th_eu = [7.04271402e+01, 6.68115182e+02, 5.02962263e+02, -145.34, 85.77, 9.61]
     # g_target_th_qu = [*g_target_th_eu[:3], *degToQuat(g_target_th_eu[3:])]
 
     # w_target_th_eu = invert_matrix @ np.array([*g_target_th_eu[:3], 1])
@@ -454,10 +451,10 @@ def createScene(root) -> None:
     # print(w_target_th_eu)
 
     if _hand:
-        w_target_th_eu = [-50.0, 120.0, 25.0, 170, 25, -75]
-        w_target_in_eu = [1.840503, 223.3336, 23.694411, 0, 0, 0]#[1.840503, 223.3336, 23.694411, 0, 0, 0] #[-23.694411, -1.840503, 271.3336, 0, 0, 0]
+        w_target_th_eu = [-3.21, 124.094, 19.73, -152.9, 13.67, -75]
+        w_target_in_eu = [70.427, 156.2, 26.06, -145.34, 85.77, 9.61]#[1.840503, 223.3336, 23.694411, 0, 0, 0] #[-23.694411, -1.840503, 271.3336, 0, 0, 0]
         hand = createHand(sim, path, target_wrist, [
-            None,
+            w_target_th_eu,
             w_target_in_eu
         ], _generic_solver, _arm750)
 
@@ -465,7 +462,7 @@ def createScene(root) -> None:
         # thread = threading.Thread(target=checkSharedMemory, args=(arm, hand, _generic_solver))
         # thread.start()
 
-        controller = CustomController(arm, hand, _generic_solver)
+        controller = CustomController(arm, hand, cube, _generic_solver)
         root.addObject(controller)
 
 if __name__ == "__main__":

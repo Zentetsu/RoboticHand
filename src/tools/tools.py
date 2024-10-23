@@ -48,15 +48,15 @@ def initScene(node, path, ground=False, generic_solver=0) -> None:
     node.addObject("VisualStyle", displayFlags="showVisualModels showBehaviorModels showInteractionForceFields", bbox=[-1, -1, -1, 1, 1, 1])
 
     node.gravity = [0, 0, -9810.0]
-    node.dt = 0.01
+    node.dt = 0.001
 
     if generic_solver:
-        node.addObject("GenericConstraintSolver", tolerance=1e-7, maxIterations=1000)
+        node.addObject("GenericConstraintSolver", tolerance=1e-5, maxIterations=10000)
 
     node.addObject("CollisionPipeline")
     node.addObject("ParallelBruteForceBroadPhase")
     node.addObject("ParallelBVHNarrowPhase")
-    node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=0.6", listening=True)
+    node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=1.5")
     node.addObject("LocalMinDistance", name="Proximity", alarmDistance=5, contactDistance=1)
     # node.addObject('NewProximityIntersection', alarmDistance=5, contactDistance=1)
     # node.addObject('MinProximityIntersection', alarmDistance=10, contactDistance=5)
@@ -95,12 +95,12 @@ def launchGUI(root) -> None:
         Sofa.Gui.GUIManager.MainLoop(root)
         Sofa.Gui.GUIManager.closeGUI()
 
-def degToQuat(euler_angles):
-    return R.from_euler('xyz', euler_angles, degrees=True).as_quat()
+def eulToQuat(euler_angles, rad=True):
+    return R.from_euler('xyz', euler_angles, degrees=not rad).as_quat()
 
 def getForearmFromHand(palm_coords, local_translation_y):
     x, y, z = palm_coords[0:3]
-    qx, qy, qz, qw = degToQuat([palm_coords[3], palm_coords[4], palm_coords[5]])
+    qx, qy, qz, qw = eulToQuat([palm_coords[3], palm_coords[4], palm_coords[5]])
 
     T_y = local_translation_y
     t_local = np.array([0, T_y, 0])
@@ -161,11 +161,25 @@ def invertMatrix(T):
 
     return T_inv
 
-def coEulerToQuat(c_wridt, c_finger):
+# def coEulerToQuat(c_wridt, c_finger):
+#     matrix = matrixOriginToWrist(c_wridt[:3], c_wridt[3:])
+
+#     g_target_th_po = matrix @ np.array([*c_finger[:3], 1])
+#     g_eu = R.from_matrix(matrix[:3, :3] @ eulerRotationMatrix(*c_finger[3:])).as_euler('xyz', degrees=True)
+#     g_target_th_eu = [*g_target_th_po[:3], *g_eu]
+#     g_target_th_qu = [*g_target_th_eu[:3], *degToQuat(g_target_th_eu[3:])]
+
+#     return g_target_th_qu
+
+def coEulerToQuat(c_wridt, c_finger, add_rotation_xyz=(0, 0, 0)):
     matrix = matrixOriginToWrist(c_wridt[:3], c_wridt[3:])
 
     g_target_th_po = matrix @ np.array([*c_finger[:3], 1])
-    g_eu = R.from_matrix(matrix[:3, :3] @ eulerRotationMatrix(*c_finger[3:])).as_euler('xyz', degrees=True)
+    additional_rotation = R.from_euler('xyz', add_rotation_xyz, degrees=True).as_matrix()
+
+    combined_rotation_matrix = matrix[:3, :3] @  eulerRotationMatrix(*c_finger[3:]) @ additional_rotation
+    g_eu = R.from_matrix(combined_rotation_matrix).as_euler('xyz', degrees=True)
+
     g_target_th_eu = [*g_target_th_po[:3], *g_eu]
     g_target_th_qu = [*g_target_th_eu[:3], *degToQuat(g_target_th_eu[3:])]
 

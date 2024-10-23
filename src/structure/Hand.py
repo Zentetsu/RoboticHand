@@ -38,6 +38,15 @@ class Hand(ComplexStructure):
 
         self.indice = indice
 
+    def updateAngle(self, n_angles_in, n_angles_th):
+        n_a = [
+            n_angles_in[0], n_angles_in[1], 0.002443461, -0.06021386, n_angles_in[2],
+            -0.191986, -0.083339472, n_angles_th[0], 0, -0.174533, n_angles_th[1], n_angles_th[2], n_angles_th[3], n_angles_th[4], 0,  #n_angles_in[7], #n_angles_in[8], #n_angles_in[9], #n_angles_in[10], n_angles_in[11],
+            -0.0028797933, -0.04258603, n_angles_in[3], n_angles_in[4], n_angles_in[5], n_angles_in[6], 0
+        ]
+
+        self.structure.angles = n_a
+
     def getPosition(self):
         rotation_quat = R.from_euler('xyz', [math.radians(0), math.radians(90), math.radians(90)]).as_quat()
         angles = [0] * len(self.mo.position.value)

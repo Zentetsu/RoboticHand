@@ -37,7 +37,10 @@ class ComplexStructure(BasicStructure):
             for joint in self.joint_actuator:
                 self.articulation.addObject("JointActuator", name="joint_" + str(joint[0]), index=joint[0], maxAngleVariation=0.001, minAngle=joint[1], maxAngle=joint[2])
 
-        self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e3, points=[i for i in range(0, len(self.init_angles))]) #TODO: Check for inverse solver
+            self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e0, points=[i for i in range(0, len(self.init_angles))]) #TODO: Check for inverse solver
+        else:
+            self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e10, angularStiffness=1e12, points=[i for i in range(0, len(self.init_angles))]) #TODO: Check for inverse solver
+
 
     def createRigid(self) -> None:
         print("Create " + self.name + " rigid...")
@@ -45,7 +48,7 @@ class ComplexStructure(BasicStructure):
         self.rigid = self.articulation.addChild("Rigid")
 
         self.mo = self.rigid.addObject("MechanicalObject", name="dofs", template="Rigid3", showObject=True, showObjectScale=10, position=self.positions[0:len(self.positions)], translation=self.translation, rotation=self.rotation)
-        self.rigid.addObject("ArticulatedSystemMapping", input1=self.articulation.dofs.getLinkPath(), output=self.rigid.dofs.getLinkPath())
+        self.rigid.addObject("ArticulatedSystemMapping", input1=self.articulation.dofs.getLinkPath(), output=self.rigid.dofs.getLinkPath(), applyRestPosition=True)
 
     def createVisualization(self, collision=False) -> None:
         print("Create " + self.name + " visualization...")
@@ -76,7 +79,7 @@ class ComplexStructure(BasicStructure):
             self.rigid.addObject("PositionEffector", name="pe_" + str(i), template="Rigid3", indices=self.indice[i], effectorGoal=self.target[i].dofs.findData('position').getLinkPath(), useDirections=[1, 1, 1, 1, 1, 1])
 
     def updateAngle(self, n_angles):
-        self.structure.angles = np.deg2rad(n_angles).tolist()
+        self.structure.angles = n_angles
 
     def updatePosition(self, n_pos):
         self.mo.position = n_pos

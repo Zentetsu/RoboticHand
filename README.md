@@ -20,9 +20,8 @@
 - ```--sm```: Use a SharedMemory to control the simualation
 
 ## Control
-- (```W```, ```S```), (```Q```, ```D```), and (```shift```, ```alt```) control respectively the X, Y, and Z of the robot target point with the inverse solver
-- (```UP```, ```DOWN```), (```LEFT```, ```RIGHT```), and (```PAGE_UP```, ```PAGE_DOWN```) control respectively the X, Y, and Z of the index target point with the inverse solver
-- ```1```, ```2```, ```3```, ```4```, ```5```, ```6```: Control respectively each axis of the robot with the generic solver
+- (```UP```, ```DOWN```), (```LEFT```, ```RIGHT```), and (```PAGE_UP```, ```PAGE_DOWN```) control respectively the X, Y, and Z of the index target point with the inverse and generic solver
+- ```cmd``` control the rotation around each axis by using the previous control
 
 ## dependencies
 - SharedMemory (will be isntalled by IRONBark):

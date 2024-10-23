@@ -8,7 +8,12 @@ import threading
 import asyncio
 import signal
 import time
+import math
 import ast
+import os
+
+import roboticstoolbox as rtb
+from spatialmath import SO3, SE3
 
 
 # IMU_ADD = "118FD1F0-FC55-3456-24AD-53815F5F3946"
@@ -209,7 +214,7 @@ class ControllerKB:
     def ControllerKB(self, verbose):
         self.verbose = verbose
 
-        self.command = {'1':0, '2':0, '3':0, '4':0, '5':0, '6':0, 'w': False, 's': False, 'a': False, 'd': False, 'p': False, 'shift': False, 'alt': False, 'esc': False, 'up': False, 'down': False, 'left': False, 'right': False, 'pup': False, 'pdown': False, 'cmd': False}
+        self.command = {'esc': False, '0': False, '1': False, '2': False, 'up': False, 'down': False, 'left': False, 'right': False, 'pup': False, 'pdown': False, 'cmd': False}
 
     def readInput(self):
         with Listener(on_press=self.on_press, on_release=self.on_release) as listener:
@@ -226,10 +231,6 @@ class ControllerKB:
 
             if key == key.cmd:
                 self.command['cmd'] = True
-            if key == key.shift:
-                self.command['shift'] = True
-            if key == key.alt:
-                self.command['alt'] = True
             if key == key.up:
                 self.command['up'] = True
             if key == key.down:
@@ -251,10 +252,6 @@ class ControllerKB:
         except:
             if key == key.cmd:
                 self.command['cmd'] = False
-            if key == key.shift:
-                self.command['shift'] = False
-            if key == key.alt:
-                self.command['alt'] = False
             if key == key.up:
                 self.command['up'] = False
             if key == key.down:
@@ -284,67 +281,94 @@ if __name__ == "__main__":
     #     except:
     #         print("fail")
 
-    Target_Module = Module(file="./data/Target_Module.json")
+    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ['PHDPATH'] + "/RoboticHand/model/myArm750/myArm750.URDF")
+    IK_arm = rtb.Robot(links, name=name, urdf_string=urdf_string, urdf_filepath=urdf_filepath)
 
-    t = None
+    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ['PHDPATH'] + "/RoboticHand/model/hand/hand.URDF")
+    IK_hand_in = rtb.Robot(links, name=name, urdf_string=urdf_string, urdf_filepath=urdf_filepath)
+
+    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ['PHDPATH'] + "/RoboticHand/model/hand/thumb.URDF")
+    IK_hand_th = rtb.Robot(links, name=name, urdf_string=urdf_string, urdf_filepath=urdf_filepath)
+
+    Target_Module = Module(file="./data/Target_Module.json")
+    q0_arm = Target_Module["target"]["wrist_a"]
+    q0_hand_in = Target_Module["target"]["index_a"]
+    q0_hand_th = Target_Module["target"]["thumb_a"]
+
+    T_ar = IK_arm.fkine(q0_arm)
+    T_in = IK_hand_in.fkine(q0_hand_in, end="indexp5_c")
+    T_th = IK_hand_th.fkine(q0_hand_th)
+    T = [T_ar, T_in, T_th]
 
     cKB = ControllerKB()
     thread = threading.Thread(target=cKB.readInput, args=())
     thread.start()
 
+    target = 0
+
     while not cKB.getInput()["esc"]:
         time.sleep(0.01)
 
-        old = Target_Module["target"]["wrist"]
-        old2 = Target_Module["target"]["index"]
-        ang = Target_Module["target"]["angles"]
+        if cKB.getInput()['0']:
+            target = 0
+        elif cKB.getInput()['1']:
+            target = 1
+        elif cKB.getInput()['2']:
+            target = 2
 
-        # print(old, old2, ang)
-
-        if cKB.getInput()["w"]:
-            old[0] += 1
-        elif cKB.getInput()["s"]:
-            old[0] -= 1
-        elif cKB.getInput()["a"]:
-            old[1] -= 1
-        elif cKB.getInput()["d"]:
-            old[1] += 1
-        elif cKB.getInput()["shift"]:
-            old[2] += 1
-        elif cKB.getInput()["alt"]:
-            old[2] -= 1
-
+        finger = 1 if not cKB.getInput()["cmd"] else 0
         if cKB.getInput()["up"]:
-            old2[0] += 0.1
+            if not cKB.getInput()["cmd"]:
+                T[target] = T[target] * SE3.Tx(0.001)
+            else:
+                T[target] = T[target] * SE3.Rx(math.radians(1))
+
         elif cKB.getInput()["down"]:
-            old2[0] -= 0.1
+            if not cKB.getInput()["cmd"]:
+                T[target] = T[target] * SE3.Tx(-0.001)
+            else:
+                T[target] = T[target] * SE3.Rx(math.radians(-1))
         if cKB.getInput()["left"]:
-            old2[1] -= 0.1
+            if not cKB.getInput()["cmd"]:
+                T[target] = T[target] * SE3.Ty(0.001)
+            else:
+                T[target] = T[target] * SE3.Ry(math.radians(1))
         elif cKB.getInput()["right"]:
-            old2[1] += 0.1
+            if not cKB.getInput()["cmd"]:
+                T[target] = T[target] * SE3.Ty(-0.001)
+            else:
+                T[target] = T[target] * SE3.Ry(math.radians(-1))
         if cKB.getInput()["pup"]:
-            old2[2] -= 0.1
+            if not cKB.getInput()["cmd"]:
+                T[target] = T[target] * SE3.Tz(0.001)
+            else:
+                T[target] = T[target] * SE3.Rz(math.radians(1))
         elif cKB.getInput()["pdown"]:
-            old2[2] += 0.1
+            if not cKB.getInput()["cmd"]:
+                T[target] = T[target] * SE3.Tz(-0.001)
+            else:
+                T[target] = T[target] * SE3.Rz(math.radians(-1))
 
-        val = 1 if not cKB.getInput()["shift"] else 0.1
-        if cKB.getInput()['1']:
-            ang[0] = ang[0] + val if not cKB.getInput()['cmd'] else ang[0] - val
-        if cKB.getInput()['2']:
-            ang[1] = ang[1] + val if not cKB.getInput()['cmd'] else ang[1] - val
-        if cKB.getInput()['3']:
-            ang[2] = ang[2] + val if not cKB.getInput()['cmd'] else ang[2] - val
-        if cKB.getInput()['4']:
-            ang[3] = ang[3] + val if not cKB.getInput()['cmd'] else ang[3] - val
-        if cKB.getInput()['5']:
-            ang[4] = ang[4] + val if not cKB.getInput()['cmd'] else ang[4] - val
-        if cKB.getInput()['6']:
-            ang[5] = ang[5] + val if not cKB.getInput()['cmd'] else ang[5] - val
+        sol = IK_arm.ikine_QP(T[0], q0=q0_arm)
+        q0_arm = sol.q
 
+        sol = IK_hand_in.ikine_QP(T[1], tol=1e-20, q0=q0_hand_in)
+        if not np.isnan(sol.q).any():
+            q0_hand_in = sol.q
 
-        Target_Module["target"]["wrist"] = old
-        Target_Module["target"]["index"] = old2
-        Target_Module["target"]["angles"] = ang
+        sol = IK_hand_th.ikine_QP(T[2], tol=1e10, q0=q0_hand_th, ps=3)
+        if not np.isnan(sol.q).any():
+            q0_hand_th = sol.q
+
+        # print(sol)
+        eul = [list(T[0].eul()), list(T[1].eul()), list(T[2].eul())]
+        # print([T[0].x, T[0].y, T[0].z, *eul[0]])
+        Target_Module["target"]["wrist_p"] = [T[0].x*1000, T[0].y*1000, T[0].z*1000, *eul[0]]
+        Target_Module["target"]["index_p"] = [T[1].x*1000, T[1].y*1000, T[1].z*1000, *eul[1]]
+        Target_Module["target"]["thumb_p"] = [T[2].x*1000, T[2].y*1000, T[2].z*1000, *eul[2]]
+        Target_Module["target"]["wrist_a"] = q0_arm
+        Target_Module["target"]["index_a"] = q0_hand_in
+        Target_Module["target"]["thumb_a"] = q0_hand_th
 
     # time.sleep(5)
     Target_Module.stopModule(name="target")
