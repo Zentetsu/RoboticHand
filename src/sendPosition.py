@@ -284,7 +284,7 @@ if __name__ == "__main__":
     links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ['PHDPATH'] + "/RoboticHand/model/myArm750/myArm750.URDF")
     IK_arm = rtb.Robot(links, name=name, urdf_string=urdf_string, urdf_filepath=urdf_filepath)
 
-    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ['PHDPATH'] + "/RoboticHand/model/hand/hand.URDF")
+    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ['PHDPATH'] + "/RoboticHand/model/hand/index.URDF")
     IK_hand_in = rtb.Robot(links, name=name, urdf_string=urdf_string, urdf_filepath=urdf_filepath)
 
     links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ['PHDPATH'] + "/RoboticHand/model/hand/thumb.URDF")
@@ -296,8 +296,9 @@ if __name__ == "__main__":
     q0_hand_th = Target_Module["target"]["thumb_a"]
 
     T_ar = IK_arm.fkine(q0_arm)
-    T_in = IK_hand_in.fkine(q0_hand_in, end="indexp5_c")
+    T_in = IK_hand_in.fkine(q0_hand_in)
     T_th = IK_hand_th.fkine(q0_hand_th)
+
     T = [T_ar, T_in, T_th]
 
     cKB = ControllerKB()
@@ -305,6 +306,7 @@ if __name__ == "__main__":
     thread.start()
 
     target = 0
+    weights = [1, 1, 1, 0, 0, 0]
 
     while not cKB.getInput()["esc"]:
         time.sleep(0.01)
@@ -322,7 +324,6 @@ if __name__ == "__main__":
                 T[target] = T[target] * SE3.Tx(0.001)
             else:
                 T[target] = T[target] * SE3.Rx(math.radians(1))
-
         elif cKB.getInput()["down"]:
             if not cKB.getInput()["cmd"]:
                 T[target] = T[target] * SE3.Tx(-0.001)
@@ -349,20 +350,18 @@ if __name__ == "__main__":
             else:
                 T[target] = T[target] * SE3.Rz(math.radians(-1))
 
-        sol = IK_arm.ikine_QP(T[0], q0=q0_arm)
+        sol = IK_arm.ikine_QP(T[0], q0=q0_arm, pi=0.001)
         q0_arm = sol.q
 
-        sol = IK_hand_in.ikine_QP(T[1], tol=1e-20, q0=q0_hand_in)
+        sol = IK_hand_in.ikine_LM(T[1], q0=q0_hand_in, mask=weights)
         if not np.isnan(sol.q).any():
             q0_hand_in = sol.q
 
-        sol = IK_hand_th.ikine_QP(T[2], tol=1e10, q0=q0_hand_th, ps=3)
+        sol = IK_hand_th.ikine_LM(T[2], q0=q0_hand_th, mask=weights)
         if not np.isnan(sol.q).any():
             q0_hand_th = sol.q
 
-        # print(sol)
         eul = [list(T[0].eul()), list(T[1].eul()), list(T[2].eul())]
-        # print([T[0].x, T[0].y, T[0].z, *eul[0]])
         Target_Module["target"]["wrist_p"] = [T[0].x*1000, T[0].y*1000, T[0].z*1000, *eul[0]]
         Target_Module["target"]["index_p"] = [T[1].x*1000, T[1].y*1000, T[1].z*1000, *eul[1]]
         Target_Module["target"]["thumb_p"] = [T[2].x*1000, T[2].y*1000, T[2].z*1000, *eul[2]]

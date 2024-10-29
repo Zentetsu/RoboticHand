@@ -39,7 +39,7 @@ class ComplexStructure(BasicStructure):
 
             self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e0, points=[i for i in range(0, len(self.init_angles))]) #TODO: Check for inverse solver
         else:
-            self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e10, angularStiffness=1e12, points=[i for i in range(0, len(self.init_angles))]) #TODO: Check for inverse solver
+            self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e13, angularStiffness=1e13, points=[i for i in range(0, len(self.init_angles))]) #TODO: Check for generic solver
 
 
     def createRigid(self) -> None:

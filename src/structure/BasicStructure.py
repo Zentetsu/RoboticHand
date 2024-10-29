@@ -59,7 +59,7 @@ class BasicStructure():
             self.structure.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d")
         elif solver == "CGLinearSolver":
             self.structure.addObject("EulerImplicitSolver") #, rayleighStiffness=1e-3, rayleighMass=1e-3)
-            self.structure.addObject("CGLinearSolver", threshold=1e-5, tolerance=1e-5, iterations=1000)
+            self.structure.addObject("CGLinearSolver", threshold=1e-5, tolerance=1e-5, iterations=50)
 
         if "ComplexStructure" not in str(type(self).__base__):
             if self.deformable:
@@ -68,7 +68,7 @@ class BasicStructure():
                 self.mo = self.structure.addObject("MechanicalObject", name="Rigid_DOF", template="Rigid3", position=self.positions[0])
 
             if collision:
-                self.structure.addObject("UniformMass", totalMass=0.001) # TODO: CHeck with arm weight
+                self.structure.addObject("UniformMass", totalMass=0.005) # TODO: CHeck with arm weight
 
         if constraint:
             self.structure.addObject("UncoupledConstraintCorrection" if type_c else "GenericConstraintCorrection")#, linearSolver="@../Solver")
@@ -77,7 +77,7 @@ class BasicStructure():
         BasicStructure.addMesh(self.structure, self.name + "_def", self.path + self.name + ".msh", translation=self.visu_info[0][3], rotation=self.visu_info[0][4])
         self.structure.addObject("MeshTopology", src="@" + self.name + "_def")
         self.structure.addObject("MechanicalObject", template="Vec3")
-        self.structure.addObject('ParallelTetrahedronFEMForceField', poissonRatio=0.49, youngModulus=500, method='large')
+        self.structure.addObject('ParallelTetrahedronFEMForceField', poissonRatio=0.1, youngModulus=50)
         # self.structure.addObject('BoxROI', box=[-75, 300, -25, -175, 400, 75], drawBoxes=True, name='boxROI')
         # self.structure.addObject('RestShapeSpringsForceField', points='@BoxROI.indices', stiffness=1e1)
         # self.structure.addObject('RestShapeSpringsForceField', stiffness=1e0)
@@ -175,9 +175,9 @@ class BasicStructure():
         collision.addObject("MechanicalObject", name="Collision_RM", translation=translation, rotation=rotation)
 
         if complx:
-            collision.addObject("TriangleCollisionModel", contactResponse="StickContactForceField")
-            collision.addObject("LineCollisionModel", contactResponse="StickContactForceField")
-            collision.addObject("PointCollisionModel", contactResponse="StickContactForceField")
+            collision.addObject("TriangleCollisionModel", contactResponse="StickContactConstraint")#, contactResponse="StickContactForceField")
+            collision.addObject("LineCollisionModel", contactResponse="StickContactConstraint")#, contactResponse="StickContactForceField")
+            collision.addObject("PointCollisionModel", contactResponse="StickContactConstraint")#, contactResponse="StickContactForceField")
             if deformable:
                 collision.addObject('BarycentricMapping')
             else:

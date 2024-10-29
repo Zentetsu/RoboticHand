@@ -42,17 +42,16 @@ class CustomController(Sofa.Core.Controller):
                 g_target_in_qu = coEulerToQuat(target_wrist, target_index)
                 self.hand.updateTargetPosition(1, g_target_in_qu)
         if on and self.generic:
+            target_wrist_angle = np.array(self.SOFA_Module["target"]["wrist_a"])
             if self.arm is not None:
-                target_wrist_angle = np.array(self.SOFA_Module["target"]["wrist_a"])
                 print(target_wrist_angle)
 
-                self.arm.updateAngle(list(target_wrist_angle))
-
+                self.arm.updateAngle(list(target_wrist_angle[:6]))
             if self.hand is not None:
                 target_index_angle = np.array(self.SOFA_Module["target"]["index_a"])
                 target_thumb_angle = np.array(self.SOFA_Module["target"]["thumb_a"])
 
-                self.hand.updateAngle(list(target_index_angle), list(target_thumb_angle))
+                self.hand.updateAngle(list(target_wrist_angle[6:]), list(target_index_angle), list(target_thumb_angle))
 
 def checkSharedMemory(arm: Arm, hand: Hand, generic_solver: False) -> None:
     SOFA_Module = Module(file=os.environ['PHDPATH']  + "/RoboticHand/data/SOFA_" + ('g' if generic_solver else 'i') + "_Module.json")
@@ -341,9 +340,9 @@ def createHand(node, path, target_wrist, target_hand, generic_solver, arm):
         # Wrist
         (0, math.radians(-10), math.radians(10)),
         (1, math.radians(-75), math.radians(75)),
-        # (2, math.radians(0), math.radians(0)),
-        # (3, math.radians(-3.45), math.radians(-3.45)),
-        # (4, math.radians(-5), math.radians(5)),
+        (2, math.radians(0), math.radians(0)),
+        (3, math.radians(-3.45), math.radians(-3.45)),
+        (4, math.radians(-5), math.radians(5)),
 
         # Thumb
         # (5, math.radians(0), math.radians(0)), # thumb 1
@@ -429,7 +428,7 @@ def createScene(root) -> None:
 
     # # cube_pos = [0, 57+327.91+79-15, 173.9+303+50, 0, 0, 0, 1] #top of the arm
     if _cube:
-        cube_pos =[-125, 350, 27, 0, 0, 0, 1] # on the floor
+        cube_pos =[0, 350, 27, 0, 0, 0, 1] # on the floor
         cube = createObj(sim, path, "Cube", cube_pos)
 
     if _sphere:

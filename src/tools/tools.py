@@ -51,7 +51,7 @@ def initScene(node, path, ground=False, generic_solver=0) -> None:
     node.dt = 0.001
 
     if generic_solver:
-        node.addObject("GenericConstraintSolver", tolerance=1e-5, maxIterations=10000)
+        node.addObject("GenericConstraintSolver", tolerance=1e-7, maxIterations=1000)
 
     node.addObject("CollisionPipeline")
     node.addObject("ParallelBruteForceBroadPhase")
@@ -181,6 +181,6 @@ def coEulerToQuat(c_wridt, c_finger, add_rotation_xyz=(0, 0, 0)):
     g_eu = R.from_matrix(combined_rotation_matrix).as_euler('xyz', degrees=True)
 
     g_target_th_eu = [*g_target_th_po[:3], *g_eu]
-    g_target_th_qu = [*g_target_th_eu[:3], *degToQuat(g_target_th_eu[3:])]
+    g_target_th_qu = [*g_target_th_eu[:3], *eulToQuat(g_target_th_eu[3:], rad=False)]
 
     return g_target_th_qu

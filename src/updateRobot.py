@@ -15,7 +15,7 @@ if __name__ == "__main__":
         print(robot_Module["sofa_i"]["arm_ang"])
         n_angles = robot_Module["sofa_i"]["arm_ang"]
         angles[0] = -n_angles[0]
-        angles[1] = n_angles[1]
+        angles[1] = -n_angles[1]
         angles[2] = n_angles[2]
         angles[3] = -n_angles[3]
         angles[4] = -n_angles[4]

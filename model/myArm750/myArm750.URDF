@@ -11,7 +11,7 @@
         <visual>
             <origin xyz="0.0 0.0 0.05035" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <cylinder radius="0.02" length="0.107"/>
+                <cylinder radius="0.03" length="0.107"/>
             </geometry>
         </visual>
     </link>
@@ -26,7 +26,7 @@
         <visual>
             <origin xyz="0.0 0.0 0.03345" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <cylinder radius="0.0175" length="0.0669"/>
+                <cylinder radius="0.0275" length="0.0669"/>
             </geometry>
         </visual>
     </link>
@@ -37,7 +37,7 @@
         <child link="link1"/>
         <origin xyz="0 0 0.107" rpy="0 0 0"/>
         <axis xyz="0 0 1"/>
-        <limit lower="-3.14" upper="3.14" effort="10" velocity="1"/>
+        <limit lower="-1.57" upper="1.57" effort="10" velocity="1"/>
     </joint>
 
     <!-- Link 2 -->
@@ -50,7 +50,7 @@
         <visual>
             <origin xyz="0.0 0.0 0.1515" rpy="0.0 0.0 0.0"/>
             <geometry>
-                <cylinder radius="0.015" length="0.303"/>
+                <cylinder radius="0.025" length="0.303"/>
             </geometry>
         </visual>
     </link>
@@ -61,7 +61,7 @@
         <child link="link2"/>
         <origin xyz="0 0 0.0669" rpy="0 0 0"/>
         <axis xyz="1 0 0"/>
-        <limit lower="-3.14" upper="3.14" effort="10" velocity="1"/>
+        <limit lower="-1.57" upper="1.57" effort="10" velocity="1"/>
     </joint>
 
     <!-- Link 3 -->
@@ -74,7 +74,7 @@
         <visual>
             <origin xyz="0.0 0.041265 0.0" rpy="1.5708 0.0 0.0"/>
             <geometry>
-                <cylinder radius="0.0125" length="0.08253"/>
+                <cylinder radius="0.0225" length="0.08253"/>
             </geometry>
         </visual>
     </link>
@@ -85,7 +85,7 @@
         <child link="link3"/>
         <origin xyz="0 0.057 0.303" rpy="0 0 0"/>
         <axis xyz="1 0 0"/>
-        <limit lower="-3.14" upper="3.14" effort="10" velocity="1"/>
+        <limit lower="-1.57" upper="1.57" effort="10" velocity="1"/>
     </joint>
 
     <!-- Link 4 -->
@@ -98,7 +98,7 @@
         <visual>
             <origin xyz="0.0 0.123369 0.0" rpy="1.5708 0.0 0.0"/>
             <geometry>
-                <cylinder radius="0.010" length="0.24538"/>
+                <cylinder radius="0.020" length="0.24538"/>
             </geometry>
         </visual>
     </link>
@@ -109,7 +109,7 @@
         <child link="link4"/>
         <origin xyz="0 0.08253 0" rpy="0 0 0"/>
         <axis xyz="0 1 0"/>
-        <limit lower="-3.14" upper="3.14" effort="10" velocity="1"/>
+        <limit lower="-1.57" upper="1.57" effort="10" velocity="1"/>
     </joint>
 
     <!-- Link 5 -->
@@ -122,7 +122,7 @@
         <visual>
             <origin xyz="0.0 0.0395 0.0" rpy="1.5708 0.0 0.0"/>
             <geometry>
-                <cylinder radius="0.0075" length="0.079"/>
+                <cylinder radius="0.0175" length="0.079"/>
             </geometry>
         </visual>
     </link>
@@ -133,7 +133,7 @@
         <child link="link5"/>
         <origin xyz="0 0.24538 0" rpy="0 0 0"/>
         <axis xyz="1 0 0"/>
-        <limit lower="-3.14" upper="3.14" effort="10" velocity="1"/>
+        <limit lower="-1.57" upper="1.57" effort="10" velocity="1"/>
     </joint>
 
     <!-- Link 6 -->
@@ -144,9 +144,9 @@
             <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05" />
         </inertial>
         <visual>
-            <origin xyz="0.0 0.01 0.0" rpy="1.5708 0.0 0.0"/>
+            <origin xyz="0.0 0.024 0.0" rpy="1.5708 0.0 0.0"/>
             <geometry>
-                <cylinder radius="0.005" length="0.02"/>
+                <cylinder radius="0.015" length="0.048"/>
             </geometry>
         </visual>
     </link>
@@ -157,7 +157,107 @@
         <child link="link6"/>
         <origin xyz="0 0.079 0" rpy="0 0 0"/>
         <axis xyz="0 1 0"/>
+        <limit lower="-1.57" upper="1.57" effort="10" velocity="1"/>
+    </joint>
+
+    <!-- Link 7 -->
+    <link name="wrist">
+        <inertial>
+            <mass value="0.5" />
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05" />
+        </inertial>
+        <visual>
+            <origin xyz="0.0 0.008 0.0" rpy="1.5708 0.0 0.0"/>
+            <geometry>
+                <cylinder radius="0.0125" length="0.016"/>
+            </geometry>
+        </visual>
+    </link>
+
+    <!-- Joint 7 -->
+    <joint name="joint7" type="revolute">
+        <parent link="link6"/>
+        <child link="wrist"/>
+        <origin xyz="0 0.048 0" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-0.40" upper="0.40" effort="10" velocity="1"/>
+    </joint>
+
+    <!-- Link 8 -->
+    <link name="meta2_c">
+        <inertial>
+            <mass value="0.5" />
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05" />
+        </inertial>
+        <visual>
+            <origin xyz="0.0 0.0 0.0" rpy="1.5708 0.0 0.0"/>
+            <geometry>
+                <cylinder radius="0.01" length="0.016"/>
+            </geometry>
+        </visual>
+    </link>
+
+    <!-- Joint 8 -->
+    <joint name="joint8" type="revolute">
+        <parent link="wrist"/>
+        <child link="meta2_c"/>
+        <origin xyz="0.0011 0.0326447 -0.0025" rpy="0 0 0"/>
+        <axis xyz="1 0 0"/>
+        <limit lower="-1.57" upper="1.57" effort="10" velocity="1"/>
+    </joint>
+
+    <!-- Link 9 -->
+    <link name="meta1_c_1">
+        <inertial>
+            <mass value="0.5" />
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05" />
+        </inertial>
+    </link>
+    <link name="meta1_c_2">
+        <inertial>
+            <mass value="0.5" />
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05" />
+        </inertial>
+    </link>
+    <link name="meta1_c_3">
+        <inertial>
+            <mass value="0.5" />
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05" />
+        </inertial>
+        <visual>
+            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            <geometry>
+                <cylinder radius="0.005" length="0.032"/>
+            </geometry>
+        </visual>
+    </link>
+
+    <!-- Joint 9 -->
+    <joint name="joint9_1" type="fixed">
+        <parent link="meta2_c"/>
+        <child link="meta1_c_1"/>
+        <origin xyz="-0.0096137 0.0489203 -0.00165902" rpy="0.002443461 0 0"/>
+        <axis xyz="0 0 0"/>
         <limit lower="-3.14" upper="3.14" effort="10" velocity="1"/>
+    </joint>
+    <joint name="joint9_2" type="fixed">
+        <parent link="meta1_c_1"/>
+        <child link="meta1_c_2"/>
+        <origin xyz="0 0 0" rpy="0 0 0.06021386"/>
+        <axis xyz="0 0 0"/>
+        <limit lower="-3.14" upper="3.14" effort="10" velocity="1"/>
+    </joint>
+    <joint name="joint9_3" type="revolute">
+        <parent link="meta1_c_2"/>
+        <child link="meta1_c_3"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-0.08" upper="0.08" effort="10" velocity="1"/>
     </joint>
 
 </robot>
