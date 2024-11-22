@@ -3,7 +3,7 @@
     "sender": {
         "robot": {}
     },
-    "listener": [
-        "sofa_i"
-    ]
+    "listener": {
+        "sofa_i": []
+    }
 }

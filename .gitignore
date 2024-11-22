@@ -200,3 +200,6 @@ model_full/
 *.mtl
 *.geo
 *.step
+*.toml
+SharedMemory
+IRONBark

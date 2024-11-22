@@ -1,3 +1,39 @@
+"""
+File: sendPosition.py
+Created Date: Tuesday, October 8th 2024, 10:28:16 am
+Author: Zentetsu
+
+----
+
+Last Modified: Fri Nov 22 2024
+Modified By: Zentetsu
+
+----
+
+Project: src
+Copyright (c) 2024 Zentetsu
+
+----
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http: //www.gnu.org/licenses/>.
+
+----
+HISTORY:
+Date      	By	Comments
+----------	---	---------------------------------------------------------
+"""  # noqa
+
 from IRONbark import Module
 
 from scipy.signal import butter, lfilter
@@ -195,77 +231,87 @@ from spatialmath import SO3, SE3
 #             # print(client.is_connected)
 #             await asyncio.sleep(0.1)
 
-def handler(signum, frame):
-    global loop_
-    loop_ = False
+
+# def handler(signum, frame):
+#     global loop_
+#     loop_ = False
 
 
 from pynput.keyboard import Listener, Key
 import time
 
+
 class ControllerKB:
-    def __new__(cls, verbose=False):
-        if not hasattr(cls, 'instance') or not cls.instance:
+    """ControllerKB class to handle keyboard inputs for controlling the robotic hand."""
+
+    def __new__(cls, verbose: bool = False) -> "ControllerKB":
+        """Create and return a new instance of ControllerKB."""
+        if not hasattr(cls, "instance") or not cls.instance:
             cls.instance = super().__new__(cls)
             cls.instance.ControllerKB(verbose)
 
         return cls.instance
 
-    def ControllerKB(self, verbose):
+    def ControllerKB(self, verbose: bool) -> None:
+        """Initialize the ControllerKB with verbosity option."""
         self.verbose = verbose
 
-        self.command = {'esc': False, '0': False, '1': False, '2': False, 'up': False, 'down': False, 'left': False, 'right': False, 'pup': False, 'pdown': False, 'cmd': False}
+        self.command = {"esc": False, "0": False, "1": False, "2": False, "up": False, "down": False, "left": False, "right": False, "pup": False, "pdown": False, "cmd": False}
 
-    def readInput(self):
+    def readInput(self) -> None:
+        """Start listening for keyboard input."""
         with Listener(on_press=self.on_press, on_release=self.on_release) as listener:
             listener.join()
 
-    def on_press(self, key):
+    def on_press(self, key: Key) -> None:
+        """Handle the press of a key."""
         try:
             if key.char in self.command:
                 self.command[key.char] = True
         except:
             if key == Key.esc:
-                self.command['esc'] = True
+                self.command["esc"] = True
                 return False
 
             if key == key.cmd:
-                self.command['cmd'] = True
+                self.command["cmd"] = True
             if key == key.up:
-                self.command['up'] = True
+                self.command["up"] = True
             if key == key.down:
-                self.command['down'] = True
+                self.command["down"] = True
             if key == key.left:
-                self.command['left'] = True
+                self.command["left"] = True
             if key == key.right:
-                self.command['right'] = True
+                self.command["right"] = True
             if key == key.page_up:
-                self.command['pup'] = True
+                self.command["pup"] = True
             if key == key.page_down:
-                self.command['pdown'] = True
+                self.command["pdown"] = True
 
-    def on_release(self, key):
+    def on_release(self, key: Key) -> None:
+        """Handle the release of a key."""
         try:
             if key.char in self.command:
                 self.command[key.char] = False
 
         except:
             if key == key.cmd:
-                self.command['cmd'] = False
+                self.command["cmd"] = False
             if key == key.up:
-                self.command['up'] = False
+                self.command["up"] = False
             if key == key.down:
-                self.command['down'] = False
+                self.command["down"] = False
             if key == key.left:
-                self.command['left'] = False
+                self.command["left"] = False
             if key == key.right:
-                self.command['right'] = False
+                self.command["right"] = False
             if key == key.page_up:
-                self.command['pup'] = False
+                self.command["pup"] = False
             if key == key.page_down:
-                self.command['pdown'] = False
+                self.command["pdown"] = False
 
-    def getInput(self):
+    def getInput(self) -> dict:
+        """Return the current state of the command dictionary."""
         return self.command
 
 
@@ -281,13 +327,13 @@ if __name__ == "__main__":
     #     except:
     #         print("fail")
 
-    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ['PHDPATH'] + "/RoboticHand/model/myArm750/myArm750.URDF")
+    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ["PHDPATH"] + "/RoboticHand/model/myArm750/myArm750.URDF")
     IK_arm = rtb.Robot(links, name=name, urdf_string=urdf_string, urdf_filepath=urdf_filepath)
 
-    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ['PHDPATH'] + "/RoboticHand/model/hand/index.URDF")
+    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ["PHDPATH"] + "/RoboticHand/model/hand/index.URDF")
     IK_hand_in = rtb.Robot(links, name=name, urdf_string=urdf_string, urdf_filepath=urdf_filepath)
 
-    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ['PHDPATH'] + "/RoboticHand/model/hand/thumb.URDF")
+    links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(os.environ["PHDPATH"] + "/RoboticHand/model/hand/thumb.URDF")
     IK_hand_th = rtb.Robot(links, name=name, urdf_string=urdf_string, urdf_filepath=urdf_filepath)
 
     Target_Module = Module(file="./data/Target_Module.json")
@@ -311,11 +357,11 @@ if __name__ == "__main__":
     while not cKB.getInput()["esc"]:
         time.sleep(0.01)
 
-        if cKB.getInput()['0']:
+        if cKB.getInput()["0"]:
             target = 0
-        elif cKB.getInput()['1']:
+        elif cKB.getInput()["1"]:
             target = 1
-        elif cKB.getInput()['2']:
+        elif cKB.getInput()["2"]:
             target = 2
 
         finger = 1 if not cKB.getInput()["cmd"] else 0
@@ -362,9 +408,9 @@ if __name__ == "__main__":
             q0_hand_th = sol.q
 
         eul = [list(T[0].eul()), list(T[1].eul()), list(T[2].eul())]
-        Target_Module["target"]["wrist_p"] = [T[0].x*1000, T[0].y*1000, T[0].z*1000, *eul[0]]
-        Target_Module["target"]["index_p"] = [T[1].x*1000, T[1].y*1000, T[1].z*1000, *eul[1]]
-        Target_Module["target"]["thumb_p"] = [T[2].x*1000, T[2].y*1000, T[2].z*1000, *eul[2]]
+        Target_Module["target"]["wrist_p"] = [T[0].x * 1000, T[0].y * 1000, T[0].z * 1000, *eul[0]]
+        Target_Module["target"]["index_p"] = [T[1].x * 1000, T[1].y * 1000, T[1].z * 1000, *eul[1]]
+        Target_Module["target"]["thumb_p"] = [T[2].x * 1000, T[2].y * 1000, T[2].z * 1000, *eul[2]]
         Target_Module["target"]["wrist_a"] = q0_arm
         Target_Module["target"]["index_a"] = q0_hand_in
         Target_Module["target"]["thumb_a"] = q0_hand_th

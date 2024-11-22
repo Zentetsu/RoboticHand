@@ -50,5 +50,5 @@ if [[ $Inverse -eq 1 ]]; then
 fi
 
 if [[ $Generic -eq 1 ]]; then
-	python "runSofaScript.py" -g -c --arm750 --hand --sm &
+	python "runSofaScript.py" -g -c --sm &
 fi

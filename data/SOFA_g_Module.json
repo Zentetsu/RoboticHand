@@ -1,10 +1,16 @@
 {
     "name": "sofa_g",
     "sender": {
-        "sofa_g": {}
+        "sofa_g": {
+            "id": 0
+        }
     },
-    "listener": [
-        "sofa_i",
-        "target"
-    ]
+    "listener": {
+        "sofa_i": [],
+        "target": [],
+        "pose": [
+            "10.45.103.193",
+            "12345"
+        ]
+    }
 }
