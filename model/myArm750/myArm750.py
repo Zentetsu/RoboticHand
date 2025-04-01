@@ -2,9 +2,10 @@ import roboticstoolbox as rtb
 from spatialmath import SO3, SE3
 from scipy.spatial.transform import Rotation as R
 import math
+import os
 
 links, name, urdf_string, urdf_filepath = rtb.Robot.URDF_read(
-    "/Users/thibautmorant/Desktop/PhD/RoboticHand/model/hand/thumb.URDF"
+    os.environ["PHDPATH"] + "RoboticHand/model/hand/thumb.URDF"
 )
 
 robot = rtb.Robot(
@@ -15,21 +16,21 @@ robot = rtb.Robot(
 )
 
 q0 = [
-    math.radians(0), # Wrist link
-    math.radians(45), # Meta 2
-    math.radians(0), # Meta 1 3
-    math.radians(0), # Index 1 3
-    math.radians(10), # index 2
-    math.radians(-90), # index 3
-    math.radians(-30), # index 4
+    math.radians(0),  # Wrist link
+    math.radians(45),  # Meta 2
+    math.radians(0),  # Meta 1 3
+    math.radians(0),  # Index 1 3
+    math.radians(10),  # index 2
+    math.radians(-90),  # index 3
+    math.radians(-30),  # index 4
 ]
 
 q0 = [
-    math.radians(-45), # Thumb 1 3
-    math.radians(-20), # Thumb 2 3
-    math.radians(-30), # Thumb 3
-    math.radians(70), # Thumb 4
-    math.radians(45), # Thumb 5
+    math.radians(-45),  # Thumb 1 3
+    math.radians(-20),  # Thumb 2 3
+    math.radians(-30),  # Thumb 3
+    math.radians(70),  # Thumb 4
+    math.radians(45),  # Thumb 5
 ]
 
 # for _ in range(0, 50):
@@ -51,5 +52,5 @@ print(sol.success, sol.q)
 
 rotation_matrix = T.R
 rotation = R.from_matrix(rotation_matrix)
-euler_angles = rotation.as_euler('xyz', degrees=True)
+euler_angles = rotation.as_euler("xyz", degrees=True)
 print("Euler angles (degrees):", euler_angles)

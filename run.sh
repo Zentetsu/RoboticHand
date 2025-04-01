@@ -3,6 +3,7 @@ SendPos=0
 Inverse=0
 Generic=0
 UpdateRob=0
+python_exec=$CONDA_PREFIX/bin/python
 
 
 while [[ $# -gt 0 ]]; do
@@ -42,13 +43,13 @@ if [[ $validate -eq -1 ]]; then
 fi
 
 if [[ $SendPos -eq 1 ]]; then
-	python "./src/SendPosition.py" &
+	$python_exec "./src/sendPosition.py" &
 fi
 
 if [[ $Inverse -eq 1 ]]; then
-	python "runSofaScript.py" -c --arm750 --sm &
+	$python_exec "runSofaScript.py" -c --arm750 --sm &
 fi
 
 if [[ $Generic -eq 1 ]]; then
-	python "runSofaScript.py" -g -c --sm &
+	$python_exec "runSofaScript.py" -g -c --sm &
 fi
