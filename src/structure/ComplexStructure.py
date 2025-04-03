@@ -5,7 +5,7 @@ Author: Zentetsu
 
 ----
 
-Last Modified: Fri Nov 22 2024
+Last Modified: Sat Mar 08 2025
 Modified By: Zentetsu
 
 ----
@@ -77,7 +77,9 @@ class ComplexStructure(BasicStructure):
         """
         print("Init " + name + "...")
 
-        super().__init__(node, path, name, translation, rotation, positions, init_angles, visu_info)
+        super().__init__(
+            node, path, name, translation, rotation, positions, init_angles, visu_info
+        )
 
     def createStructure(self, solver: str, constraint: bool = False) -> None:
         """Create the structure with the given solver and constraint.
@@ -89,7 +91,9 @@ class ComplexStructure(BasicStructure):
         """
         super().createStructure(solver, constraint=constraint)
 
-        self.structure.addData("angles", self.init_angles, None, self.name + " angles", "", "vector<float>")
+        self.structure.addData(
+            "angles", self.init_angles, None, self.name + " angles", "", "vector<float>"
+        )
 
     def createArticulation(self, joint_limit: bool = False) -> None:
         """Create the articulation for the structure.
@@ -106,17 +110,41 @@ class ComplexStructure(BasicStructure):
 
         self.articulation = self.structure.addChild("Articulation")
 
-        self.articulation.addObject("MechanicalObject", name="dofs", template="Vec1", rest_position=self.structure.getData("angles").getLinkPath(), position=self.init_angles)
+        self.articulation.addObject(
+            "MechanicalObject",
+            name="dofs",
+            template="Vec1",
+            rest_position=self.structure.getData("angles").getLinkPath(),
+            position=self.init_angles,
+        )
         self.articulation.addObject("ArticulatedHierarchyContainer")
-        self.articulation.addObject("UniformMass", totalMass=45)  # TODO: Check with obj weight
+        self.articulation.addObject(
+            "UniformMass", totalMass=100
+        )  # TODO: Check with obj weight
 
         if joint_limit:
             for joint in self.joint_actuator:
-                self.articulation.addObject("JointActuator", name="joint_" + str(joint[0]), index=joint[0], maxAngleVariation=0.001, minAngle=joint[1], maxAngle=joint[2])
+                self.articulation.addObject(
+                    "JointActuator",
+                    name="joint_" + str(joint[0]),
+                    index=joint[0],
+                    maxAngleVariation=0.001,
+                    minAngle=joint[1],
+                    maxAngle=joint[2],
+                )
 
-            self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e0, points=[i for i in range(0, len(self.init_angles))])  # TODO: Check for inverse solver
+            self.articulation.addObject(
+                "RestShapeSpringsForceField",
+                stiffness=1e10,
+                points=[i for i in range(0, len(self.init_angles))],
+            )  # TODO: Check for inverse solver
         else:
-            self.articulation.addObject("RestShapeSpringsForceField", stiffness=1e13, angularStiffness=1e13, points=[i for i in range(0, len(self.init_angles))])  # TODO: Check for generic solver
+            self.articulation.addObject(
+                "RestShapeSpringsForceField",
+                stiffness=1e13,
+                angularStiffness=1e13,
+                points=[i for i in range(0, len(self.init_angles))],
+            )  # TODO: Check for generic solver
 
     def createRigid(self) -> None:
         """Create the rigid body for the structure."""
@@ -134,7 +162,18 @@ class ComplexStructure(BasicStructure):
             translation=self.translation,
             rotation=self.rotation,
         )
-        self.rigid.addObject("ArticulatedSystemMapping", input1=self.articulation.dofs.getLinkPath(), output=self.rigid.dofs.getLinkPath(), applyRestPosition=True)
+        self.rigid.addObject(
+            "ArticulatedSystemMapping",
+            input1=self.articulation.dofs.getLinkPath(),
+            output=self.rigid.dofs.getLinkPath(),
+            applyRestPosition=True,
+        )
+
+        self.rigid.addObject(
+            "ConstantForceField",
+            indices="0 1 2 3 4 5 6 7 8 9",
+            forces=["-5000000 -5000000 -5000000 0 0 0"],
+        )
 
     def createVisualization(self, collision: bool = False) -> None:
         """Create the visualization for the structure.
@@ -167,12 +206,27 @@ class ComplexStructure(BasicStructure):
             if target is None:
                 continue
 
+            target = [float(i) for i in target]
             self.target[i] = self.node.addChild(self.name + "_EffectorTarget_" + str(i))
 
             self.target[i].addObject("EulerImplicitSolver", firstOrder=True)
-            self.target[i].addObject("CGLinearSolver", iterations=100, threshold=1e-2, tolerance=1e-5)
-            self.target[i].addObject("MechanicalObject", name="dofs", template="Rigid3", position=target, showObject=1, showObjectScale=10, drawMode=1)
-            self.target[i].addObject("UncoupledConstraintCorrection", name="UCC_t_" + self.name + "_" + str(i), defaultCompliance="0.1")
+            self.target[i].addObject(
+                "CGLinearSolver", iterations=100, threshold=1e-2, tolerance=1e-5
+            )
+            self.target[i].addObject(
+                "MechanicalObject",
+                name="dofs",
+                template="Rigid3",
+                position=target,
+                showObject=1,
+                showObjectScale=10,
+                drawMode=1,
+            )
+            self.target[i].addObject(
+                "UncoupledConstraintCorrection",
+                name="UCC_t_" + self.name + "_" + str(i),
+                defaultCompliance="0.1",
+            )
 
             self.rigid.addObject(
                 "PositionEffector",
@@ -190,7 +244,20 @@ class ComplexStructure(BasicStructure):
             n_angles: The new angles to be set.
 
         """
+        # print(len(self.structure.angles), len(n_angles))
         self.structure.angles = n_angles
+
+    def updateGripper(self, n_gripper: float) -> None:
+        """Update the gripper of the structure.
+
+        Args:
+            n_gripper: The new gripper to be set.
+
+        """
+        gripper = copy.deepcopy(self.structure.angles.value)
+        gripper[-2] = -n_gripper
+        gripper[-1] = n_gripper
+        self.structure.angles = gripper
 
     def updatePosition(self, n_pos: list) -> None:
         """Update the position of the mechanical object.
@@ -245,7 +312,20 @@ class ComplexStructure(BasicStructure):
 
         """
         center = node.addChild(name)
-        center.addObject("ArticulationCenter", parentIndex=parentIndex, childIndex=childIndex, posOnParent=posOnParent, posOnChild=posOnChild, articulationProcess=articulationProcess)
+        center.addObject(
+            "ArticulationCenter",
+            parentIndex=parentIndex,
+            childIndex=childIndex,
+            posOnParent=posOnParent,
+            posOnChild=posOnChild,
+            articulationProcess=articulationProcess,
+        )
 
         articulation = center.addChild("Articulation")
-        articulation.addObject("Articulation", translation=isTranslation, rotation=isRotation, rotationAxis=axis, articulationIndex=articulationIndex)
+        articulation.addObject(
+            "Articulation",
+            translation=isTranslation,
+            rotation=isRotation,
+            rotationAxis=axis,
+            articulationIndex=articulationIndex,
+        )

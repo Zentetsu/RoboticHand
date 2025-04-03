@@ -42,7 +42,7 @@ import Sofa.Gui  # type: ignore
 import SofaRuntime  # type: ignore
 from scipy.spatial.transform import Rotation as R
 
-USE_GUI = False
+USE_GUI = True
 
 
 def addPlugins(node: Sofa.Core.Node) -> None:
@@ -53,6 +53,8 @@ def addPlugins(node: Sofa.Core.Node) -> None:
 
     """
     print("Add plugins...")
+
+    node.addObject("DefaultVisualManagerLoop")
 
     node.addObject(
         "RequiredPlugin",
@@ -87,7 +89,9 @@ def addPlugins(node: Sofa.Core.Node) -> None:
     )
 
 
-def initScene(node: Sofa.Core.Node, path: str, ground: bool = False, generic_solver: int = 0) -> None:
+def initScene(
+    node: Sofa.Core.Node, path: str, ground: bool = False, generic_solver: int = 0
+) -> None:
     """Initialize the Sofa scene with the given parameters.
 
     Args:
@@ -100,7 +104,11 @@ def initScene(node: Sofa.Core.Node, path: str, ground: bool = False, generic_sol
     print("Init scene...")
 
     node.addObject("FreeMotionAnimationLoop")
-    node.addObject("VisualStyle", displayFlags="showVisualModels showBehaviorModels showInteractionForceFields", bbox=[-1, -1, -1, 1, 1, 1])
+    node.addObject(
+        "VisualStyle",
+        displayFlags="showVisualModels showBehaviorModels showInteractionForceFields",
+        bbox=[-1, -1, -1, 1, 1, 1],
+    )
 
     node.gravity = [0, 0, -9810.0]
     node.dt = 0.001
@@ -111,15 +119,27 @@ def initScene(node: Sofa.Core.Node, path: str, ground: bool = False, generic_sol
     node.addObject("CollisionPipeline")
     node.addObject("ParallelBruteForceBroadPhase")
     node.addObject("ParallelBVHNarrowPhase")
-    node.addObject("CollisionResponse", response="FrictionContactConstraint", responseParams="mu=1.5")
-    node.addObject("LocalMinDistance", name="Proximity", alarmDistance=5, contactDistance=1)
-    # node.addObject('NewProximityIntersection', alarmDistance=5, contactDistance=1)
+    node.addObject(
+        "CollisionResponse",
+        response="FrictionContactConstraint",
+        responseParams="mu=1.5",
+    )
+    node.addObject(
+        "LocalMinDistance", name="Proximity", alarmDistance=5, contactDistance=1
+    )
+    node.addObject("NewProximityIntersection", alarmDistance=5, contactDistance=1)
     # node.addObject('MinProximityIntersection', alarmDistance=10, contactDistance=5)
 
     # Inverse solver
     # node.addObject("LCPConstraintSolver", maxIt=1000, tolerance=0.001)
     if not generic_solver:
-        node.addObject("QPInverseProblemSolver", maxIterations=10000, tolerance=1e-2, epsilon=1e-4, printLog=False)
+        node.addObject(
+            "QPInverseProblemSolver",
+            maxIterations=10000,
+            tolerance=1e-2,
+            epsilon=1e-4,
+            printLog=False,
+        )
 
     if ground:
         addGround(node, path)
@@ -137,7 +157,14 @@ def addGround(node: Sofa.Core.Node, path: str) -> None:
 
     ground = node.addChild("Ground")
 
-    ground.addObject("MeshSTLLoader", name="loader", filename=path + "Ground.stl", rotation=[0, 0, 0], scale=1, translation=[0, 0, 0])
+    ground.addObject(
+        "MeshSTLLoader",
+        name="loader",
+        filename=path + "Ground.stl",
+        rotation=[0, 0, 0],
+        scale=1,
+        translation=[0, 0, 0],
+    )
     ground.addObject("MeshTopology", src="@loader")
     ground.addObject("MechanicalObject", src="@loader")
     ground.addObject("TriangleCollisionModel", moving=0, simulated=0)
@@ -153,17 +180,18 @@ def launchGUI(root: Sofa.Core.Node) -> None:
         root: The root node of the Sofa simulation.
 
     """
+
+    # Once defined, initialization of the scene graph
     Sofa.Simulation.init(root)
 
-    if not USE_GUI:
-        for iteration in range(10):
-            Sofa.Simulation.animate(root, root.dt.value)
-    else:
-        Sofa.Gui.GUIManager.Init("Scene", "qglviewer")
-        Sofa.Gui.GUIManager.createGUI(root, __file__)
-        Sofa.Gui.GUIManager.SetDimension(1920, 1080)
-        Sofa.Gui.GUIManager.MainLoop(root)
-        Sofa.Gui.GUIManager.closeGUI()
+    # Launch the GUI (qt or qglviewer)
+    Sofa.Gui.GUIManager.Init("myscene", "qglviewer")
+    Sofa.Gui.GUIManager.createGUI(root, __file__)
+    Sofa.Gui.GUIManager.SetDimension(1080, 800)
+
+    # Initialization of the scene will be done here
+    Sofa.Gui.GUIManager.MainLoop(root)
+    Sofa.Gui.GUIManager.closeGUI()
 
 
 def eulToQuat(euler_angles: list, rad: bool = True) -> np.ndarray:
@@ -223,11 +251,21 @@ def eulerRotationMatrix(roll: float, pitch: float, yaw: float) -> np.ndarray:
     pitch = np.deg2rad(pitch)
     yaw = np.deg2rad(yaw)
 
-    Rx = np.array([[1, 0, 0], [0, np.cos(roll), -np.sin(roll)], [0, np.sin(roll), np.cos(roll)]])
+    Rx = np.array(
+        [[1, 0, 0], [0, np.cos(roll), -np.sin(roll)], [0, np.sin(roll), np.cos(roll)]]
+    )
 
-    Ry = np.array([[np.cos(pitch), 0, np.sin(pitch)], [0, 1, 0], [-np.sin(pitch), 0, np.cos(pitch)]])
+    Ry = np.array(
+        [
+            [np.cos(pitch), 0, np.sin(pitch)],
+            [0, 1, 0],
+            [-np.sin(pitch), 0, np.cos(pitch)],
+        ]
+    )
 
-    Rz = np.array([[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0, 0, 1]])
+    Rz = np.array(
+        [[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0, 0, 1]]
+    )
 
     return Rz @ Ry @ Rx
 
@@ -275,7 +313,9 @@ def invertMatrix(T: np.ndarray) -> np.ndarray:
     return T_inv
 
 
-def coEulerToQuat(c_wridt: list, c_finger: list, add_rotation_xyz: tuple = (0, 0, 0)) -> list:
+def coEulerToQuat(
+    c_wridt: list, c_finger: list, add_rotation_xyz: tuple = (0, 0, 0)
+) -> list:
     """Convert wrist and finger coordinates from Euler angles to quaternion.
 
     Args:
@@ -290,9 +330,13 @@ def coEulerToQuat(c_wridt: list, c_finger: list, add_rotation_xyz: tuple = (0, 0
     matrix = matrixOriginToWrist(c_wridt[:3], c_wridt[3:])
 
     g_target_th_po = matrix @ np.array([*c_finger[:3], 1])
-    additional_rotation = R.from_euler("xyz", add_rotation_xyz, degrees=True).as_matrix()
+    additional_rotation = R.from_euler(
+        "xyz", add_rotation_xyz, degrees=True
+    ).as_matrix()
 
-    combined_rotation_matrix = matrix[:3, :3] @ eulerRotationMatrix(*c_finger[3:]) @ additional_rotation
+    combined_rotation_matrix = (
+        matrix[:3, :3] @ eulerRotationMatrix(*c_finger[3:]) @ additional_rotation
+    )
     g_eu = R.from_matrix(combined_rotation_matrix).as_euler("xyz", degrees=True)
 
     g_target_th_eu = [*g_target_th_po[:3], *g_eu]

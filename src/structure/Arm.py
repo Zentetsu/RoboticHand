@@ -5,7 +5,7 @@ Author: Zentetsu
 
 ----
 
-Last Modified: Fri Nov 22 2024
+Last Modified: Wed Mar 05 2025
 Modified By: Zentetsu
 
 ----
@@ -77,7 +77,9 @@ class Arm(ComplexStructure):
         self.joint_actuator = joint_actuator
         self.articulation_info = articulation_info
 
-        super().__init__(node, path, name, translation, rotation, positions, init_angles, visu_info)
+        super().__init__(
+            node, path, name, translation, rotation, positions, init_angles, visu_info
+        )
 
         self.ext = ".stl"
 
@@ -89,12 +91,22 @@ class Arm(ComplexStructure):
 
         for i, articullation in enumerate(self.articulation_info):
             ComplexStructure.addCenter(
-                self.centers, articullation[0], articullation[1], articullation[2], articullation[3], articullation[4], 0, 0, articullation[5], articullation[6], articullation[7]
+                self.centers,
+                articullation[0],
+                articullation[1],
+                articullation[2],
+                articullation[3],
+                articullation[4],
+                0,
+                not articullation[5],
+                articullation[5],
+                articullation[6],
+                articullation[7],
             )
 
         self.indice = [len(self.articulation_info)]
 
-    def getPosition(self) -> list:
+    def getPosition(self) -> np.ndarray:
         """Get the current position of the arm's joints.
 
         Returns:
@@ -106,10 +118,21 @@ class Arm(ComplexStructure):
         angles_ = []
 
         for i in range(1, len(angles)):
-            angles[i] = list(R.from_quat(self.mo.position.value[i][3:]).as_euler("xyz", degrees=True) - d_angle)
+            angles[i] = list(
+                R.from_quat(self.mo.position.value[i][3:]).as_euler("xyz", degrees=True)
+                - d_angle
+            )
             d_angle = d_angle + np.array(angles[i])
 
             if self.articulation_info[i - 1][5] == 1:
-                angles_.append(round(np.dot(np.array(angles[i]), np.array(self.articulation_info[i - 1][6])), 2))
+                angles_.append(
+                    round(
+                        np.dot(
+                            np.array(angles[i]),
+                            np.array(self.articulation_info[i - 1][6]),
+                        ),
+                        2,
+                    )
+                )
 
-        return angles_
+        return np.array(angles_)

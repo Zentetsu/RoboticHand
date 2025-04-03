@@ -53,7 +53,14 @@ from IRONbark import Module
 class CustomController(Sofa.Core.Controller):
     """Custom controller for handling the robotic arm and hand movements."""
 
-    def __init__(self, arm: Arm, hand: Hand, cube: BasicStructure, l_hand: list[BasicStructure], generic_solver: False) -> None:
+    def __init__(
+        self,
+        arm: Arm,
+        hand: Hand,
+        cube: BasicStructure,
+        l_hand: list[BasicStructure],
+        generic_solver: False,
+    ) -> None:
         """Initialize the CustomController.
 
         Args:
@@ -70,22 +77,33 @@ class CustomController(Sofa.Core.Controller):
         self.cube = cube
         self.l_hand = l_hand
         self.generic = generic_solver
-        self.camera_pose = np.array([[-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0.60], [0, 0, 0, 1]])
+        self.camera_pose = np.array(
+            [[-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0.60], [0, 0, 0, 1]]
+        )
 
-        self.SOFA_Module = Module(file=os.environ["PHDPATH"] + "/RoboticHand/data/SOFA_" + ("g" if generic_solver else "i") + "_Module.json")
+        self.SOFA_Module = Module(
+            file=os.environ["PHDPATH"]
+            + "/RoboticHand/data/SOFA_"
+            + ("g" if generic_solver else "i")
+            + "_Module.json"
+        )
 
     def onAnimateBeginEvent(self, event: any) -> None:
         """Handle the beginning of the animation event."""
         on = (
             self.SOFA_Module.getLSAvailability(listener=True)[1][0]
             if not self.generic
-            else self.SOFA_Module.getLSAvailability(listener=True)[1][0] or self.SOFA_Module.getLSAvailability(listener=True)[1][1]
+            else self.SOFA_Module.getLSAvailability(listener=True)[1][0]
+            or self.SOFA_Module.getLSAvailability(listener=True)[1][1]
         )
 
-        pose = self.SOFA_Module.getValue("pose")["cube"]
-        hand = self.SOFA_Module.getValue("pose")["hand"]
-        pose = self.camera_pose @ pose
-        self.cube.updatePosition(pose, True)
+        pose_on = self.SOFA_Module["pose"].getAvailability()
+
+        if pose_on:
+            pose = self.SOFA_Module.getValue("pose")["cube"]
+            hand = self.SOFA_Module.getValue("pose")["hand"]
+            pose = self.camera_pose @ pose
+            self.cube.updatePosition(pose, True)
 
         if self.l_hand is not None:
             for i, h in enumerate(self.l_hand):
@@ -101,6 +119,7 @@ class CustomController(Sofa.Core.Controller):
 
                 arm_angles = self.arm.getPosition()
                 self.SOFA_Module["sofa_i"]["arm_ang"] = arm_angles
+
             if self.hand is not None:
                 # TODO: Need to be tested
                 target_thumb = self.SOFA_Module["target"]["thumb_p"]
@@ -110,6 +129,7 @@ class CustomController(Sofa.Core.Controller):
                 target_index = self.SOFA_Module["target"]["index_p"]
                 g_target_in_qu = coEulerToQuat(target_wrist, target_index)
                 self.hand.updateTargetPosition(1, g_target_in_qu)
+
         if on and self.generic:
             target_wrist_angle = np.array(self.SOFA_Module["target"]["wrist_a"])
             if self.arm is not None:
@@ -120,10 +140,23 @@ class CustomController(Sofa.Core.Controller):
                 target_index_angle = np.array(self.SOFA_Module["target"]["index_a"])
                 target_thumb_angle = np.array(self.SOFA_Module["target"]["thumb_a"])
 
-                self.hand.updateAngle(list(target_wrist_angle[6:]), list(target_index_angle), list(target_thumb_angle))
+                self.hand.updateAngle(
+                    list(target_wrist_angle[6:]),
+                    list(target_index_angle),
+                    list(target_thumb_angle),
+                )
 
 
-def createObj(node: Sofa.Core.Node, path: str, name: str, position: list) -> BasicStructure:
+def createObj(
+    node: Sofa.Core.Node,
+    path: str,
+    name: str,
+    position: list,
+    deformable: bool = True,
+    collision: bool = True,
+    solver: str = "CGLinearSolver",
+    id: str = "",
+) -> BasicStructure:
     """Create a basic structure object.
 
     Args:
@@ -131,19 +164,36 @@ def createObj(node: Sofa.Core.Node, path: str, name: str, position: list) -> Bas
         path: The path to the object's files.
         name: The name of the object.
         position: The initial position of the object.
+        deformable: A flag indicating whether the object is deformable.
+        collision: A flag indicating whether the object has collision.
+        solver: The solver to be used for the object.
 
     Returns:
-        The created BasicStructure object.
+        The created BasicStructure object.self.SOFA_Module["target"]["gripper"]
 
     """
-    obj = BasicStructure(node, path + "Others/", name, positions=[position], visu_info=[(0, name, name, position[:3], position[3:-1], False)])
-    obj.createStructure(solver="CGLinearSolver", collision=False, constraint=True, type_c=1, deformable=False)
+    obj = BasicStructure(
+        node,
+        path + "Others/",
+        name + id,
+        positions=[position],
+        visu_info=[(0, name + id, name, position[:3], position[3:-1], collision)],
+    )
+    obj.createStructure(
+        solver=solver,
+        collision=collision,
+        constraint=True,
+        type_c=1,
+        deformable=deformable,
+    )
     obj.createVisualization()
 
     return obj
 
 
-def createArmTurtle(node: Sofa.Core.Node, path: str, target_wrist: list, generic_solver: bool) -> Arm:
+def createArmTurtle(
+    node: Sofa.Core.Node, path: str, target_wrist: list, generic_solver: bool
+) -> Arm:
     """Create an ArmTurtle object.
 
     Args:
@@ -215,7 +265,16 @@ def createArmTurtle(node: Sofa.Core.Node, path: str, target_wrist: list, generic
         ("Joint_4", 8, 9, [0, 0, 0], [0, 0, 0], 1, [0, 1, 0], 8),
     ]
 
-    arm = Arm(node, path + "ArmTurtle/", "Arm", positions=positions, init_angles=init_angles, visu_info=visu_info, joint_actuator=joint_actuator, articulation_info=articulation_info)
+    arm = Arm(
+        node,
+        path + "ArmTurtle/",
+        "Arm",
+        positions=positions,
+        init_angles=init_angles,
+        visu_info=visu_info,
+        joint_actuator=joint_actuator,
+        articulation_info=articulation_info,
+    )
     arm.createStructure(solver="SparseLDLSolver", constraint=True)
     arm.createArticulation(joint_limit=generic_solver)
     arm.createRigid()
@@ -232,7 +291,9 @@ def createArmTurtle(node: Sofa.Core.Node, path: str, target_wrist: list, generic
     return arm
 
 
-def createArm750(node: Sofa.Core.Node, path: str, target_wrist: list, generic_solver: bool) -> Arm:
+def createArm750(
+    node: Sofa.Core.Node, path: str, target_wrist: list, generic_solver: bool
+) -> Arm:
     """Create an Arm750 object.
 
     Args:
@@ -293,7 +354,16 @@ def createArm750(node: Sofa.Core.Node, path: str, target_wrist: list, generic_so
         ("R5", 5, 6, [0, 79, 0], [0, 0, 0], 1, [0, 1, 0], 5),
     ]
 
-    arm = Arm(node, path + "myArm750/", "Arm", positions=positions, init_angles=init_angles, visu_info=visu_info, joint_actuator=joint_actuator, articulation_info=articulation_info)
+    arm = Arm(
+        node,
+        path + "myArm750/",
+        "Arm",
+        positions=positions,
+        init_angles=init_angles,
+        visu_info=visu_info,
+        joint_actuator=joint_actuator,
+        articulation_info=articulation_info,
+    )
     arm.createStructure(solver="SparseLDLSolver", constraint=True)
     arm.createArticulation(joint_limit=generic_solver)
     arm.createRigid()
@@ -309,7 +379,14 @@ def createArm750(node: Sofa.Core.Node, path: str, target_wrist: list, generic_so
     return arm
 
 
-def createHand(node: Sofa.Core.Node, path: str, target_wrist: list, target_hand: list, generic_solver: bool, arm: Arm) -> Hand:
+def createHand(
+    node: Sofa.Core.Node,
+    path: str,
+    target_wrist: list,
+    target_hand: list,
+    generic_solver: bool,
+    arm: Arm,
+) -> Hand:
     """Create a Hand object.
 
     Args:
@@ -324,8 +401,16 @@ def createHand(node: Sofa.Core.Node, path: str, target_wrist: list, target_hand:
         The created Hand object.
 
     """
-    g_target_th_qu = None if target_hand[0] is None else coEulerToQuat(target_wrist, target_hand[0])
-    g_target_in_qu = None if target_hand[1] is None else coEulerToQuat(target_wrist, target_hand[1]) if len(target_hand[1]) == 6 else target_hand[1]
+    g_target_th_qu = (
+        None if target_hand[0] is None else coEulerToQuat(target_wrist, target_hand[0])
+    )
+    g_target_in_qu = (
+        None
+        if target_hand[1] is None
+        else coEulerToQuat(target_wrist, target_hand[1])
+        if len(target_hand[1]) == 6
+        else target_hand[1]
+    )
 
     positions = [
         [0, 0, 0, 0, 0, 0, 1],
@@ -446,17 +531,44 @@ def createHand(node: Sofa.Core.Node, path: str, target_wrist: list, target_hand:
         ("Thumbp3_c", 11, 12, [-3.4515, 0, 20.4197], [0, 0, 0], 1, [0, 1, 0], 11),
         ("Thumbp4_c", 12, 13, [-1.2, 0, 40], [0, 0, 0], 1, [0, 1, 0], 12),
         ("Thumbp5_c", 13, 14, [-7.2, 0, 36], [0, 0, 0], 1, [0, 1, 0], 13),
-        ("Thumbp6_c", 14, 15, [5.70894, 0.003393, 33.9805], [0, 0, 0], 0, [0, 0, 0], 14),
+        (
+            "Thumbp6_c",
+            14,
+            15,
+            [5.70894, 0.003393, 33.9805],
+            [0, 0, 0],
+            0,
+            [0, 0, 0],
+            14,
+        ),
         ("Indexp1_c_1", 4, 16, [-13.8285, -1.45, 30.1857], [0, 0, 0], 1, [1, 0, 0], 15),
         ("Indexp1_c_2", 16, 17, [0, 0, 0], [0, 0, 0], 1, [0, 0, 1], 16),
         ("Indexp1_c_3", 17, 18, [0, 0, 0], [0, 0, 0], 1, [0, 1, 0], 17),
         ("Indexp2_c", 18, 19, [-0.099998, -1.6, 14], [0, 0, 0], 1, [1, 0, 0], 18),
         ("Indexp3_c", 19, 20, [0, 1.99797, 48], [0, 0, 0], 1, [1, 0, 0], 19),
         ("Indexp4_c", 20, 21, [0, 0.899992, 27.9039], [0, 0, 0], 1, [1, 0, 0], 20),
-        ("Indexp5_c", 21, 22, [-0.036879, -0.910405, 22.2986], [0, 0, 0], 0, [0, 0, 0], 21),
+        (
+            "Indexp5_c",
+            21,
+            22,
+            [-0.036879, -0.910405, 22.2986],
+            [0, 0, 0],
+            0,
+            [0, 0, 0],
+            21,
+        ),
     ]
 
-    hand = Hand(node, path + "Hand/files/", "Hand", positions=positions, init_angles=init_angles, visu_info=visu_info, joint_actuator=joint_actuator, articulation_info=articulation_info)
+    hand = Hand(
+        node,
+        path + "hand/files/",
+        "Hand",
+        positions=positions,
+        init_angles=init_angles,
+        visu_info=visu_info,
+        joint_actuator=joint_actuator,
+        articulation_info=articulation_info,
+    )
     hand.createStructure(solver="SparseLDLSolver", constraint=True)
     hand.createArticulation(joint_limit=not generic_solver)
     hand.createRigid()
@@ -492,7 +604,7 @@ def createScene(root: Sofa.Core.Node) -> None:
     _arm750 = True if "arm750" in sys.argv else False
     _hand = True if "hand" in sys.argv else False
     _shared_mem = True if "sm" in sys.argv else False
-    _l_hand = True  # if "l_hand" in sys.argv else False
+    _l_hand = True if "l_hand" in sys.argv else False
 
     addPlugins(root)
     initScene(root, path + "Others/", ground=True, generic_solver=_generic_solver)
@@ -503,7 +615,16 @@ def createScene(root: Sofa.Core.Node) -> None:
     # # cube_pos = [0, 57+327.91+79-15, 173.9+303+50, 0, 0, 0, 1] #top of the arm
     if _cube:
         cube_pos = [0, 350, 27, 0, 0, 0, 1]  # on the floor
-        cube = createObj(sim, path, "Cube", cube_pos)
+        cube = createObj(
+            root,
+            "../model/",
+            "Cube",
+            cube_pos,
+            deformable=False,
+            collision=True,
+            solver="SparseLDLSolver",
+            id="",
+        )
 
     if _sphere:
         sphere_pos = [-125, 350, 50, 0, 0, 0, 1]  # on the floor
@@ -516,7 +637,14 @@ def createScene(root: Sofa.Core.Node) -> None:
             sphere_pos = [0, 0, 0, 0, 0, 0, 1]
             l_hand.append(createObj(l_hand_node, path, "Joint", sphere_pos))
 
-    target_wrist = [0, 57 + 327.91 + 79 + 48, 173.9 + 303, 0, 0, 0]  # Origin pos for top cube #[0, 0, 48, 90, 0, -90] #
+    target_wrist = [
+        0,
+        57 + 327.91 + 79 + 48,
+        173.9 + 303,
+        0,
+        0,
+        0,
+    ]  # Origin pos for top cube #[0, 0, 48, 90, 0, -90] #
     if _arm750:
         arm = createArm750(sim, path, target_wrist, not _generic_solver)
 
@@ -532,8 +660,22 @@ def createScene(root: Sofa.Core.Node) -> None:
 
     if _hand:
         w_target_th_eu = [-3.21, 124.094, 19.73, -152.9, 13.67, -75]
-        w_target_in_eu = [70.427, 156.2, 26.06, -145.34, 85.77, 9.61]  # [1.840503, 223.3336, 23.694411, 0, 0, 0] #[-23.694411, -1.840503, 271.3336, 0, 0, 0]
-        hand = createHand(sim, path, target_wrist, [w_target_th_eu, w_target_in_eu], _generic_solver, _arm750)
+        w_target_in_eu = [
+            70.427,
+            156.2,
+            26.06,
+            -145.34,
+            85.77,
+            9.61,
+        ]  # [1.840503, 223.3336, 23.694411, 0, 0, 0] #[-23.694411, -1.840503, 271.3336, 0, 0, 0]
+        hand = createHand(
+            sim,
+            path,
+            target_wrist,
+            [w_target_th_eu, w_target_in_eu],
+            _generic_solver,
+            _arm750,
+        )
 
     if _shared_mem:
         controller = CustomController(arm, hand, cube, l_hand, _generic_solver)

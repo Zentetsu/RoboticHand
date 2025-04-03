@@ -5,7 +5,7 @@ Author: Zentetsu
 
 ----
 
-Last Modified: Fri Nov 22 2024
+Last Modified: Thu Mar 20 2025
 Modified By: Zentetsu
 
 ----
@@ -42,6 +42,7 @@ import copy
 import math
 
 from scipy.spatial.transform import Rotation
+from collections import defaultdict
 from abc import abstractmethod
 
 
@@ -94,7 +95,9 @@ class BasicStructure:
             self.init_angles = init_angles
 
         if visu_info is None:
-            self.visu_info = [(0, name, name, self.positions[:3], self.positions[3:], False)]
+            self.visu_info = [
+                (0, name, name, self.positions[:3], self.positions[3:], False)
+            ]
         else:
             self.visu_info = visu_info
 
@@ -108,7 +111,14 @@ class BasicStructure:
 
         self.ext = ".stl"
 
-    def createStructure(self, solver: str = None, collision: bool = False, constraint: bool = False, type_c: int = 0, deformable: bool = False) -> None:
+    def createStructure(
+        self,
+        solver: str = None,
+        collision: bool = False,
+        constraint: bool = False,
+        type_c: int = 0,
+        deformable: bool = False,
+    ) -> None:
         """Create the structure of the robotic hand component.
 
         Args:
@@ -125,34 +135,69 @@ class BasicStructure:
         self.deformable = deformable
 
         if solver == "SparseLDLSolver":
-            self.structure.addObject("EulerImplicitSolver", rayleighStiffness=1e-4, rayleighMass=1e-4)
-            self.structure.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d")
+            self.structure.addObject(
+                "EulerImplicitSolver", rayleighStiffness=1e-4, rayleighMass=1e-4
+            )
+            self.structure.addObject(
+                "SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d"
+            )
         elif solver == "CGLinearSolver":
-            self.structure.addObject("EulerImplicitSolver")  # , rayleighStiffness=1e-3, rayleighMass=1e-3)
-            self.structure.addObject("CGLinearSolver", threshold=1e-5, tolerance=1e-5, iterations=50)
+            self.structure.addObject(
+                "EulerImplicitSolver"
+            )  # , rayleighStiffness=1e-3, rayleighMass=1e-3)
+            self.structure.addObject(
+                "CGLinearSolver", threshold=1e-5, tolerance=1e-5, iterations=50
+            )
 
         if "ComplexStructure" not in str(type(self).__base__):
             if self.deformable:
                 self.__createDeformable()
             else:
-                self.mo = self.structure.addObject("MechanicalObject", name="Rigid_DOF", template="Rigid3", position=self.positions[0])
+                self.mo = self.structure.addObject(
+                    "MechanicalObject",
+                    name="Rigid_DOF",
+                    template="Rigid3",
+                    position=self.positions[0],
+                )
 
             if collision:
-                self.structure.addObject("UniformMass", totalMass=0.005)  # TODO: CHeck with arm weight
-
+                self.structure.addObject(
+                    "UniformMass", totalMass=0.1
+                )  # TODO: CHeck with arm weight
+                # self.structure.addObject("DiagonalVelocityDampingForceField", dampingCoefficient=0.1)
         if constraint:
-            self.structure.addObject("UncoupledConstraintCorrection" if type_c else "GenericConstraintCorrection")  # , linearSolver="@../Solver")
+            if "ComplexStructure" not in str(type(self).__base__):
+                self.structure.addObject(
+                    "UncoupledConstraintCorrection"
+                    if type_c
+                    else "GenericConstraintCorrection",
+                    compliance="0.001 0.001 0.001 0.001 0.001 0.001 0.001",
+                )  # , linearSolver="@../Solver")
+            else:
+                self.structure.addObject(
+                    "UncoupledConstraintCorrection"
+                    if type_c
+                    else "GenericConstraintCorrection"
+                )  # , linearSolver="@../Solver")
 
     def __createDeformable(self) -> None:
         """Create the deformable structure of the robotic hand component."""
-        BasicStructure.addMesh(self.structure, self.name + "_def", self.path + self.name + ".msh", translation=self.visu_info[0][3], rotation=self.visu_info[0][4])
+        BasicStructure.addMesh(
+            self.structure,
+            self.name + "_def",
+            self.path + self.name + ".msh",
+            translation=self.visu_info[0][3],
+            rotation=self.visu_info[0][4],
+        )
         self.structure.addObject("MeshTopology", src="@" + self.name + "_def")
         self.structure.addObject("MechanicalObject", template="Vec3")
-        self.structure.addObject("ParallelTetrahedronFEMForceField", poissonRatio=0.1, youngModulus=50)
+        self.structure.addObject(
+            "ParallelTetrahedronFEMForceField", poissonRatio=0.3, youngModulus=1e3
+        )
         # self.structure.addObject('BoxROI', box=[-75, 300, -25, -175, 400, 75], drawBoxes=True, name='boxROI')
         # self.structure.addObject('RestShapeSpringsForceField', points='@BoxROI.indices', stiffness=1e1)
         # self.structure.addObject('RestShapeSpringsForceField', stiffness=1e0)
-        # self.structure.addObject('LinearSolverConstraintCorrection')
+        # self.structure.addObject("LinearSolverConstraintCorrection")
         # self.structure.addObject('FixedPlaneProjectiveConstraint', template='Vec3', name='default12', direction=[0, 0, 1], dmin=-5, dmax=5)
         # self.structure.addObject('FixedProjectiveConstraint', template='Vec3', name='default13', indices=[0, 1, 2, 3])
 
@@ -188,7 +233,9 @@ class BasicStructure:
 
         self.rigid = self.structure
 
-        self.rigid.addObject("MechanicalObject", template="Rigid3", position=self.positions[0])
+        self.rigid.addObject(
+            "MechanicalObject", template="Rigid3", position=self.positions[0]
+        )
 
         if collision:
             self.rigid.addObject("UniformMass", totalMass=0.1)
@@ -215,7 +262,114 @@ class BasicStructure:
             rota = [0, 0, 0] if not self.deformable and not complx else info[4]
             defo = True if self.deformable and not complx else False
             path = None if info[2] is None else self.path + info[2] + self.ext
-            BasicStructure.addPart(self.visu, info[1], info[0], path, self.positions[i], trans, rota, rigid=self.rigid is not None, collision=info[5], complx=complx, deformable=defo)
+            BasicStructure.addPart(
+                self.visu,
+                info[1],
+                info[0],
+                path,
+                self.positions[i],
+                trans,
+                rota,
+                rigid=self.rigid is not None,
+                collision=info[5],
+                complx=complx,
+                deformable=defo,
+            )
+
+    def createVisualForce(self, list_contact_listener) -> None:
+        """Create the visualization of the force acting on the structure."""
+        print("Create " + self.name + "...")
+
+        self.forces = self.node.Forces
+        self.list_contact_listener = list_contact_listener
+
+        for contact_listener in list_contact_listener:
+            force_cl = self.forces.addChild(contact_listener.name.value)
+
+            force_cl.addObject(
+                "MechanicalObject",
+                name="drawPositions",
+                position=self.structure.Collision.Collision_RM.position.value,
+                size=8,
+            )
+            force_cl.addObject(
+                "ConstantForceField",
+                name="drawForceFF",
+                forces=[0, 0, 0],
+                showArrowSize=0.001,
+            )
+
+    def verifyForce(self, dt) -> None:
+        """Calculate the force acting on the structure."""
+        for contact_listener in self.list_contact_listener:
+            if contact_listener.getNumberOfContacts() > 0:
+                self.calculateForce(
+                    contact_listener.name.value,
+                    contact_listener.getContactData()["collisionElementsModel1"],
+                    dt,
+                )
+
+    def calculateForce(self, contact_name, indice_contact, dt) -> None:
+        """Calculate the force acting on the structure."""
+        constraint = self.structure.Collision.Collision_RM.constraint.value
+        constraint_list = list(constraint.todok().keys())
+
+        grouped = defaultdict(list)
+        for x, y in constraint_list:
+            grouped[x].append((x, y))
+
+        constraint_list = list(grouped.values())
+
+        nb_dofs = len(self.structure.Collision.Collision_RM.position.value)
+        forces = np.zeros((nb_dofs, 3))
+        forces_norm = self.node.GenericConstraintSolver.constraintForces.value
+
+        for c in constraint_list:
+            nb_constraints = len(c)
+            dof = int(c[0][1] / nb_constraints)
+
+            for i in range(nb_constraints):
+                forces[dof][i] = (
+                    forces[dof][i]
+                    + float(constraint.todok()[c[i]]) * forces_norm[int(c[0][0])] / dt
+                )
+
+        pos_force = [0, 0, 0]
+        pos_obj = self.node.getChild(self.name).Collision.Collision_RM.position.value
+
+        for i in indice_contact:
+            pos_force[0] += pos_obj[i][0]
+            pos_force[1] += pos_obj[i][1]
+            pos_force[2] += pos_obj[i][2]
+
+        for i in range(3):
+            pos_force[i] = pos_force[i] / 4
+
+        contactforce_x = 0
+        contactforce_y = 0
+        contactforce_z = 0
+
+        for i in range(nb_dofs):
+            contactforce_x += forces[i][0]
+            contactforce_y += forces[i][1]
+            contactforce_z += forces[i][2]
+
+        if len(constraint.todok()) > 0:
+            self.forces.getChild(contact_name).drawForceFF.indices.value = list(
+                range(0, nb_dofs, 1)
+            )
+            self.forces.getChild(contact_name).drawForceFF.forces.value = forces
+            self.forces.getChild(contact_name).drawPositions.position.value = [
+                pos_force for _ in range(nb_dofs)
+            ]
+            self.forces.getChild(contact_name).drawForceFF.showArrowSize.value = 0.001
+
+        print(
+            "\nContactListener: contactforce: ",
+            contactforce_x / 10000,
+            contactforce_y / 10000,
+            contactforce_z / 10000,
+        )
 
     @staticmethod
     def addPart(
@@ -262,22 +416,55 @@ class BasicStructure:
         if complx:
             if deformable:
                 print("defo")
-                BasicStructure.addMesh(part, name + "_def", filename[:-3] + "msh", translation=translation, rotation=translation)
+                BasicStructure.addMesh(
+                    part,
+                    name + "_def",
+                    filename[:-3] + "msh",
+                    translation=translation,
+                    rotation=translation,
+                )
                 part.addObject("MeshTopology", src="@" + name + "_def")
                 part.addObject("MechanicalObject", template="Vec3")
-                part.addObject("ParallelTetrahedronFEMForceField", poissonRatio=0.49, youngModulus=100, method="large")
+                part.addObject(
+                    "ParallelTetrahedronFEMForceField",
+                    poissonRatio=0.49,
+                    youngModulus=100,
+                    method="large",
+                )
             else:
                 part.addObject("MechanicalObject", template="Rigid3", position=position)
                 part.addObject("RigidMapping", index=index, globalToLocalCoords=False)
 
         if filename is not None:
-            BasicStructure.addVisu(part, name, index, translation, rotation, color, rigid, complx, deformable)
+            BasicStructure.addVisu(
+                part,
+                name,
+                index,
+                translation,
+                rotation,
+                color,
+                rigid,
+                complx,
+                deformable,
+            )
 
         if collision:
-            BasicStructure.addCollision(part, name, complx, translation, rotation, deformable)
+            BasicStructure.addCollision(
+                part, name, complx, translation, rotation, deformable
+            )
 
     @staticmethod
-    def addVisu(node: Sofa.Core.Node, name: str, index: int, translation: list, rotation: list, color: list, rigid: bool, complx: bool, deformable: bool) -> None:
+    def addVisu(
+        node: Sofa.Core.Node,
+        name: str,
+        index: int,
+        translation: list,
+        rotation: list,
+        color: list,
+        rigid: bool,
+        complx: bool,
+        deformable: bool,
+    ) -> None:
         """Add visualization to the node.
 
         Args:
@@ -296,13 +483,23 @@ class BasicStructure:
 
         visu = node.addChild("Visu_" + str(index))
 
-        visu.addObject("OglModel", name="VisualModel", src="@../" + name, color=color, translation=translation, rotation=rotation, scale=1)
+        visu.addObject(
+            "OglModel",
+            name="VisualModel",
+            src="@../" + name,
+            color=color,
+            translation=translation,
+            rotation=rotation,
+            scale=1,
+        )
 
         if rigid and not complx:
             if deformable:
                 visu.addObject("BarycentricMapping")
             else:
-                visu.addObject("RigidMapping", input="@../Rigid_DOF", output="@VisualModel")
+                visu.addObject(
+                    "RigidMapping", input="@../Rigid_DOF", output="@VisualModel"
+                )
         elif rigid:
             if deformable:
                 visu.addObject("BarycentricMapping")
@@ -310,7 +507,14 @@ class BasicStructure:
                 visu.addObject("RigidMapping", output="@VisualModel")
 
     @staticmethod
-    def addCollision(node: Sofa.Core.Node, name: str, complx: bool, translation: list, rotation: list, deformable: bool) -> None:
+    def addCollision(
+        node: Sofa.Core.Node,
+        name: str,
+        complx: bool,
+        translation: list,
+        rotation: list,
+        deformable: bool,
+    ) -> None:
         """Add collision handling to the node.
 
         Args:
@@ -327,12 +531,23 @@ class BasicStructure:
         collision = node.addChild("Collision")
 
         collision.addObject("MeshTopology", src="@../" + name)
-        collision.addObject("MechanicalObject", name="Collision_RM", translation=translation, rotation=rotation)
+        collision.addObject(
+            "MechanicalObject",
+            name="Collision_RM",
+            translation=translation,
+            rotation=rotation,
+        )
 
         if complx:
-            collision.addObject("TriangleCollisionModel", contactResponse="StickContactConstraint")  # , contactResponse="StickContactForceField")
-            collision.addObject("LineCollisionModel", contactResponse="StickContactConstraint")  # , contactResponse="StickContactForceField")
-            collision.addObject("PointCollisionModel", contactResponse="StickContactConstraint")  # , contactResponse="StickContactForceField")
+            collision.addObject(
+                "TriangleCollisionModel"
+            )  # , contactResponse="StickContactConstraint")  # , contactResponse="StickContactForceField")
+            collision.addObject(
+                "LineCollisionModel"
+            )  # , contactResponse="StickContactConstraint")  # , contactResponse="StickContactForceField")
+            collision.addObject(
+                "PointCollisionModel"
+            )  # , contactResponse="StickContactConstraint")  # , contactResponse="StickContactForceField")
             if deformable:
                 collision.addObject("BarycentricMapping")
             else:
@@ -344,10 +559,18 @@ class BasicStructure:
             if deformable:
                 collision.addObject("BarycentricMapping")
             else:
-                collision.addObject("RigidMapping", input="@../Rigid_DOF", output="@Collision_RM")
+                collision.addObject(
+                    "RigidMapping", input="@../Rigid_DOF", output="@Collision_RM"
+                )
 
     @staticmethod
-    def addMesh(node: Sofa.Core.Node, name: str, filename: str, translation: list = [0, 0, 0], rotation: list = [0, 0, 0]) -> None:
+    def addMesh(
+        node: Sofa.Core.Node,
+        name: str,
+        filename: str,
+        translation: list = [0, 0, 0],
+        rotation: list = [0, 0, 0],
+    ) -> None:
         """Add a mesh to the node.
 
         Args:
@@ -365,4 +588,11 @@ class BasicStructure:
         elif filename[-3 : len(filename)] == "obj":
             node.addObject("MeshOBJLoader", name=name, filename=filename, scale=1)
         elif filename[-3 : len(filename)] == "msh":
-            node.addObject("MeshGmshLoader", name=name, filename=filename, translation=translation, rotation=rotation, scale=1)
+            node.addObject(
+                "MeshGmshLoader",
+                name=name,
+                filename=filename,
+                translation=translation,
+                rotation=rotation,
+                scale=1,
+            )
